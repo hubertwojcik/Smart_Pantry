@@ -4,7 +4,6 @@ import {
   View,
   Text,
   ActivityIndicator,
-  Platform,
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -17,7 +16,7 @@ import {
 } from "@expo-google-fonts/manrope";
 import * as Notifications from "expo-notifications";
 import { Navigation } from "./src/navigation";
-import { colors } from "./src/constants/theme";
+import { ThemeProvider, useTheme } from "./src/context/ThemeContext";
 import { useProductStore } from "./src/store/productStore";
 import {
   requestNotificationPermissions,
@@ -37,45 +36,23 @@ Notifications.setNotificationHandler({
   }),
 });
 
-export default function App() {
+const AppContent = () => {
+  const { isDark, colors } = useTheme();
   const [appIsReady, setAppIsReady] = useState(false);
   const products = useProductStore((state) => state.products);
 
-  const [fontsLoaded, fontError] = useFonts({
+  const [fontsLoaded] = useFonts({
     Manrope_400Regular,
     Manrope_500Medium,
     Manrope_600SemiBold,
     Manrope_700Bold,
   });
 
-  console.log(
-    "[App] fontsLoaded:",
-    fontsLoaded,
-    "fontError:",
-    fontError,
-    "appIsReady:",
-    appIsReady,
-  );
-
   useEffect(() => {
     async function prepare() {
-      console.log("[App] Starting initialization...");
       try {
-        console.log("[App] Requesting notification permissions...");
         await requestNotificationPermissions();
-        console.log("[App] Notification permissions done");
-
-        // Background task registration - don't block app startup
-        console.log("[App] Registering background task...");
-        registerBackgroundTask().catch((bgError) => {
-          // Background tasks may fail on simulator - this is OK
-          console.warn(
-            "[App] Background task registration failed (expected on simulator):",
-            bgError,
-          );
-        });
-
-        console.log("[App] Initialization complete");
+        registerBackgroundTask().catch(() => {});
       } catch (e) {
         console.error("[App] Error during app initialization:", e);
       } finally {
@@ -97,54 +74,58 @@ export default function App() {
         }
       },
     );
-
     return () => subscription.remove();
   }, []);
 
   useEffect(() => {
     if (appIsReady && products.length > 0) {
-      console.log(
-        "[App] Running expiry check for",
-        products.length,
-        "products",
-      );
-      runExpiryCheckForeground(products).catch((e) => {
-        console.warn("[App] Expiry check failed:", e);
-      });
+      runExpiryCheckForeground(products).catch(() => {});
     }
   }, [appIsReady, products]);
 
   if (!fontsLoaded || !appIsReady) {
     return (
-      <View style={styles.loadingContainer}>
+      <View
+        style={[
+          styles.loadingContainer,
+          { backgroundColor: colors.background },
+        ]}
+      >
         <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={styles.loadingText}>Ładowanie...</Text>
+        <Text style={[styles.loadingText, { color: colors.gray }]}>
+          Ładowanie...
+        </Text>
       </View>
     );
   }
 
   return (
     <GestureHandlerRootView style={styles.container}>
-      <StatusBar style="dark" />
+      <StatusBar style={isDark ? "light" : "dark"} />
       <Navigation />
     </GestureHandlerRootView>
+  );
+};
+
+export default function App() {
+  return (
+    <ThemeProvider>
+      <AppContent />
+    </ThemeProvider>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.neutral,
   },
   loadingContainer: {
     flex: 1,
-    backgroundColor: colors.neutral,
     alignItems: "center",
     justifyContent: "center",
   },
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: colors.gray,
   },
 });

@@ -8,7 +8,8 @@ import {
   TextInputProps,
   TouchableOpacity,
 } from "react-native";
-import { colors, radius, fontFamily, fontSize, spacing } from "../constants/theme";
+import { radius, fontFamily, fontSize, spacing } from "../constants/theme";
+import { useTheme } from "../context/ThemeContext";
 
 interface FloatingInputProps extends TextInputProps {
   label: string;
@@ -32,6 +33,7 @@ export const FloatingInput: React.FC<FloatingInputProps> = ({
   onRightIconPress,
   ...props
 }) => {
+  const { colors } = useTheme();
   const [isFocused, setIsFocused] = useState(false);
   const animatedValue = useRef(new Animated.Value(value ? 1 : 0)).current;
 
@@ -54,26 +56,33 @@ export const FloatingInput: React.FC<FloatingInputProps> = ({
     }),
     color: animatedValue.interpolate({
       inputRange: [0, 1],
-      outputRange: [colors.gray, isFocused || alwaysHighlight ? colors.primary : colors.gray],
+      outputRange: [
+        colors.gray,
+        isFocused || alwaysHighlight ? colors.primary : colors.gray,
+      ],
     }),
   };
 
-  const borderColor =
-    error
-      ? colors.statusRed
-      : isFocused || alwaysHighlight
-      ? colors.primary
-      : colors.border;
+  const borderColor = error
+    ? colors.statusRed
+    : isFocused || alwaysHighlight
+    ? colors.primary
+    : colors.border;
 
   return (
     <View style={styles.container}>
-      <View style={[styles.inputContainer, { borderColor }]}>
+      <View
+        style={[
+          styles.inputContainer,
+          { borderColor, backgroundColor: colors.surfaceContainerLow },
+        ]}
+      >
         <Animated.Text style={[styles.label, labelStyle]}>
           {label}
-          {required && <Text style={styles.required}> *</Text>}
+          {required && <Text style={{ color: colors.statusRed }}> *</Text>}
         </Animated.Text>
         <TextInput
-          style={styles.input}
+          style={[styles.input, { color: colors.charcoal }]}
           value={value}
           onChangeText={onChangeText}
           onFocus={() => setIsFocused(true)}
@@ -91,7 +100,9 @@ export const FloatingInput: React.FC<FloatingInputProps> = ({
           </TouchableOpacity>
         )}
       </View>
-      {error && <Text style={styles.error}>{error}</Text>}
+      {error && (
+        <Text style={[styles.error, { color: colors.statusRed }]}>{error}</Text>
+      )}
     </View>
   );
 };
@@ -101,7 +112,6 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg,
   },
   inputContainer: {
-    backgroundColor: colors.white,
     borderRadius: radius.md,
     borderWidth: 1,
     paddingHorizontal: spacing.lg,
@@ -115,21 +125,16 @@ const styles = StyleSheet.create({
     left: spacing.lg,
     fontFamily: fontFamily.regular,
   },
-  required: {
-    color: colors.statusRed,
-  },
   input: {
     flex: 1,
     fontFamily: fontFamily.regular,
     fontSize: fontSize.md,
-    color: colors.charcoal,
     padding: 0,
   },
   rightIcon: {
     marginLeft: spacing.sm,
   },
   error: {
-    color: colors.statusRed,
     fontFamily: fontFamily.regular,
     fontSize: fontSize.xs,
     marginTop: spacing.xs,

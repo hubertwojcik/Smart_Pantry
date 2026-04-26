@@ -1,14 +1,8 @@
 import React, { memo } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, Image } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import {
-  colors,
-  radius,
-  fontFamily,
-  fontSize,
-  spacing,
-  shadows,
-} from "../constants/theme";
+import { radius, fontFamily, fontSize, spacing, shadows } from "../constants/theme";
+import { useTheme } from "../context/ThemeContext";
 import { Product, Category } from "../types";
 import { StatusBadge } from "./StatusBadge";
 import { getStatusColor, getExpiryStatus } from "../services/expiryService";
@@ -52,12 +46,13 @@ const getCategoryColor = (category: Category): string => {
     case "Napoje":
       return "#F472B6";
     default:
-      return colors.gray;
+      return "#78716C";
   }
 };
 
 export const ProductCard: React.FC<ProductCardProps> = memo(
   ({ product, onPress }) => {
+    const { colors, isDark } = useTheme();
     const status = getExpiryStatus(product.expiryDate);
     const statusColor = getStatusColor(status);
     const categoryIcon = getCategoryIcon(product.category);
@@ -70,7 +65,7 @@ export const ProductCard: React.FC<ProductCardProps> = memo(
 
     return (
       <TouchableOpacity
-        style={styles.card}
+        style={[styles.card, { backgroundColor: colors.surface }, isDark && styles.cardDark]}
         onPress={onPress}
         activeOpacity={0.7}
       >
@@ -99,10 +94,10 @@ export const ProductCard: React.FC<ProductCardProps> = memo(
             )}
           </View>
           <View style={styles.info}>
-            <Text style={styles.name} numberOfLines={1}>
+            <Text style={[styles.name, { color: colors.charcoal }]} numberOfLines={1}>
               {product.name}
             </Text>
-            <Text style={styles.subtitle} numberOfLines={1}>
+            <Text style={[styles.subtitle, { color: colors.gray }]} numberOfLines={1}>
               {product.location && `${product.location} • `}
               {weightDisplay}
             </Text>
@@ -116,12 +111,15 @@ export const ProductCard: React.FC<ProductCardProps> = memo(
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: colors.white,
     borderRadius: radius.md,
     marginBottom: spacing.md,
     flexDirection: "row",
     overflow: "hidden",
     ...shadows.card,
+  },
+  cardDark: {
+    shadowOpacity: 0,
+    elevation: 0,
   },
   statusBorder: {
     width: 3,
@@ -154,12 +152,10 @@ const styles = StyleSheet.create({
   name: {
     fontFamily: fontFamily.semiBold,
     fontSize: fontSize.md,
-    color: colors.charcoal,
     marginBottom: 2,
   },
   subtitle: {
     fontFamily: fontFamily.regular,
     fontSize: fontSize.sm,
-    color: colors.gray,
   },
 });

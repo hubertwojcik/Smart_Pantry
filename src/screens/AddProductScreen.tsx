@@ -16,13 +16,13 @@ import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import {
-  colors,
   fontFamily,
   fontSize,
   spacing,
   radius,
   shadows,
 } from "../constants/theme";
+import { useTheme } from "../context/ThemeContext";
 import { useProductStore } from "../store/productStore";
 import { Category } from "../types";
 import {
@@ -41,6 +41,7 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 export const AddProductScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
+  const { colors } = useTheme();
   const addProduct = useProductStore((state) => state.addProduct);
   const products = useProductStore((state) => state.products);
 
@@ -130,7 +131,13 @@ export const AddProductScreen: React.FC = () => {
     ]);
 
     Alert.alert("Sukces", "Produkt został dodany do spiżarni", [
-      { text: "OK", onPress: () => resetForm() },
+      {
+        text: "OK",
+        onPress: () => {
+          resetForm();
+          navigation.goBack();
+        },
+      },
     ]);
   };
 
@@ -158,7 +165,9 @@ export const AddProductScreen: React.FC = () => {
   }, []);
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: colors.background }]}
+    >
       <View style={styles.header}>
         <TouchableOpacity
           onPress={() => navigation.goBack()}
@@ -166,7 +175,9 @@ export const AddProductScreen: React.FC = () => {
         >
           <Ionicons name="arrow-back" size={24} color={colors.charcoal} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Dodaj produkt</Text>
+        <Text style={[styles.headerTitle, { color: colors.charcoal }]}>
+          Dodaj produkt
+        </Text>
         <TouchableOpacity
           onPress={handleSubmit}
           disabled={!isValid}
@@ -191,24 +202,40 @@ export const AddProductScreen: React.FC = () => {
           keyboardShouldPersistTaps="handled"
         >
           {showSuccessBanner && (
-            <View style={styles.successBanner}>
+            <View
+              style={[
+                styles.successBanner,
+                { backgroundColor: `${colors.statusGreen}15` },
+              ]}
+            >
               <Ionicons
                 name="checkmark-circle"
                 size={20}
                 color={colors.statusGreen}
               />
-              <Text style={styles.successText}>
+              <Text style={[styles.successText, { color: colors.statusGreen }]}>
                 Produkt rozpoznany — uzupełnij datę ważności
               </Text>
             </View>
           )}
 
           <TouchableOpacity
-            style={styles.scanCard}
+            style={[
+              styles.scanCard,
+              {
+                backgroundColor: colors.surface,
+                borderLeftColor: colors.primary,
+              },
+            ]}
             onPress={handleScanPress}
             activeOpacity={0.7}
           >
-            <View style={styles.scanIconContainer}>
+            <View
+              style={[
+                styles.scanIconContainer,
+                { backgroundColor: `${colors.primary}15` },
+              ]}
+            >
               <Ionicons
                 name="barcode-outline"
                 size={32}
@@ -216,8 +243,10 @@ export const AddProductScreen: React.FC = () => {
               />
             </View>
             <View style={styles.scanTextContainer}>
-              <Text style={styles.scanTitle}>Zeskanuj kod kreskowy</Text>
-              <Text style={styles.scanSubtitle}>
+              <Text style={[styles.scanTitle, { color: colors.charcoal }]}>
+                Zeskanuj kod kreskowy
+              </Text>
+              <Text style={[styles.scanSubtitle, { color: colors.gray }]}>
                 Uzupełnimy dane automatycznie
               </Text>
             </View>
@@ -225,9 +254,15 @@ export const AddProductScreen: React.FC = () => {
           </TouchableOpacity>
 
           <View style={styles.dividerContainer}>
-            <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>LUB WPISZ RĘCZNIE</Text>
-            <View style={styles.dividerLine} />
+            <View
+              style={[styles.dividerLine, { backgroundColor: colors.border }]}
+            />
+            <Text style={[styles.dividerText, { color: colors.gray }]}>
+              LUB WPISZ RĘCZNIE
+            </Text>
+            <View
+              style={[styles.dividerLine, { backgroundColor: colors.border }]}
+            />
           </View>
 
           <Animated.View style={{ opacity: formFadeAnim }}>
@@ -258,6 +293,10 @@ export const AddProductScreen: React.FC = () => {
               <TouchableOpacity
                 style={[
                   styles.datePickerButton,
+                  {
+                    backgroundColor: colors.surfaceContainerLow,
+                    borderColor: colors.primary,
+                  },
                   showSuccessBanner &&
                     !expiryDate &&
                     styles.datePickerHighlight,
@@ -265,11 +304,13 @@ export const AddProductScreen: React.FC = () => {
                 onPress={() => setShowDatePicker(true)}
               >
                 <View>
-                  <Text style={styles.dateLabel}>Data ważności *</Text>
+                  <Text style={[styles.dateLabel, { color: colors.primary }]}>
+                    Data ważności *
+                  </Text>
                   <Text
                     style={[
                       styles.dateValue,
-                      !expiryDate && styles.datePlaceholder,
+                      { color: expiryDate ? colors.charcoal : colors.gray },
                     ]}
                   >
                     {expiryDate
@@ -295,24 +336,41 @@ export const AddProductScreen: React.FC = () => {
               />
             )}
 
-            <View style={styles.quantityRow}>
-              <Text style={styles.quantityLabel}>Ilość sztuk</Text>
+            <View
+              style={[
+                styles.quantityRow,
+                {
+                  backgroundColor: colors.surfaceContainerLow,
+                  borderColor: colors.border,
+                },
+              ]}
+            >
+              <Text style={[styles.quantityLabel, { color: colors.charcoal }]}>
+                Ilość sztuk
+              </Text>
               <QuantityStepper value={quantity} onChange={setQuantity} />
             </View>
           </Animated.View>
         </ScrollView>
 
-        <View style={styles.bottomContainer}>
+        <View
+          style={[
+            styles.bottomContainer,
+            { backgroundColor: colors.background },
+          ]}
+        >
           <TouchableOpacity
             style={[
               styles.submitButton,
-              !isValid && styles.submitButtonDisabled,
+              { backgroundColor: isValid ? colors.primary : colors.border },
             ]}
             onPress={handleSubmit}
             disabled={!isValid}
             activeOpacity={0.8}
           >
-            <Text style={styles.submitButtonText}>Dodaj do spiżarni</Text>
+            <Text style={[styles.submitButtonText, { color: colors.white }]}>
+              Dodaj do spiżarni
+            </Text>
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
@@ -323,7 +381,6 @@ export const AddProductScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.neutral,
   },
   header: {
     flexDirection: "row",
@@ -338,7 +395,6 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontFamily: fontFamily.semiBold,
     fontSize: fontSize.lg,
-    color: colors.charcoal,
   },
   checkButton: {
     padding: spacing.sm,
@@ -356,7 +412,6 @@ const styles = StyleSheet.create({
   successBanner: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: `${colors.statusGreen}15`,
     padding: spacing.md,
     borderRadius: radius.md,
     marginBottom: spacing.lg,
@@ -364,18 +419,15 @@ const styles = StyleSheet.create({
   successText: {
     fontFamily: fontFamily.medium,
     fontSize: fontSize.sm,
-    color: colors.statusGreen,
     marginLeft: spacing.sm,
     flex: 1,
   },
   scanCard: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: colors.white,
     borderRadius: radius.md,
     padding: spacing.lg,
     borderLeftWidth: 4,
-    borderLeftColor: colors.primary,
     marginBottom: spacing.xl,
     ...shadows.card,
   },
@@ -383,7 +435,6 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: radius.sm,
-    backgroundColor: `${colors.primary}15`,
     justifyContent: "center",
     alignItems: "center",
     marginRight: spacing.md,
@@ -394,13 +445,11 @@ const styles = StyleSheet.create({
   scanTitle: {
     fontFamily: fontFamily.semiBold,
     fontSize: fontSize.md,
-    color: colors.charcoal,
     marginBottom: 2,
   },
   scanSubtitle: {
     fontFamily: fontFamily.regular,
     fontSize: fontSize.sm,
-    color: colors.gray,
   },
   dividerContainer: {
     flexDirection: "row",
@@ -410,12 +459,10 @@ const styles = StyleSheet.create({
   dividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: colors.border,
   },
   dividerText: {
     fontFamily: fontFamily.medium,
     fontSize: fontSize.xs,
-    color: colors.gray,
     marginHorizontal: spacing.md,
     letterSpacing: 0.5,
   },
@@ -431,17 +478,15 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    backgroundColor: colors.white,
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: colors.primary,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
     marginBottom: spacing.lg,
   },
   datePickerHighlight: {
     borderWidth: 2,
-    shadowColor: colors.primary,
+    shadowColor: "#F97316",
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
@@ -450,25 +495,18 @@ const styles = StyleSheet.create({
   dateLabel: {
     fontFamily: fontFamily.regular,
     fontSize: fontSize.xs,
-    color: colors.primary,
     marginBottom: 2,
   },
   dateValue: {
     fontFamily: fontFamily.regular,
     fontSize: fontSize.md,
-    color: colors.charcoal,
-  },
-  datePlaceholder: {
-    color: colors.gray,
   },
   quantityRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    backgroundColor: colors.white,
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: colors.border,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
     marginBottom: spacing.lg,
@@ -476,26 +514,19 @@ const styles = StyleSheet.create({
   quantityLabel: {
     fontFamily: fontFamily.regular,
     fontSize: fontSize.md,
-    color: colors.charcoal,
   },
   bottomContainer: {
     paddingHorizontal: spacing.xl,
     paddingVertical: spacing.lg,
-    backgroundColor: colors.neutral,
   },
   submitButton: {
-    backgroundColor: colors.primary,
     borderRadius: radius.md,
     paddingVertical: spacing.lg,
     alignItems: "center",
     ...shadows.card,
   },
-  submitButtonDisabled: {
-    backgroundColor: colors.border,
-  },
   submitButtonText: {
     fontFamily: fontFamily.semiBold,
     fontSize: fontSize.md,
-    color: colors.white,
   },
 });

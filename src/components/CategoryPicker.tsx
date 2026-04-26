@@ -9,7 +9,8 @@ import {
   SafeAreaView,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { colors, radius, fontFamily, fontSize, spacing, shadows } from "../constants/theme";
+import { radius, fontFamily, fontSize, spacing } from "../constants/theme";
+import { useTheme } from "../context/ThemeContext";
 import { Category, CATEGORIES } from "../types";
 
 interface CategoryPickerProps {
@@ -21,6 +22,7 @@ export const CategoryPicker: React.FC<CategoryPickerProps> = ({
   value,
   onChange,
 }) => {
+  const { colors } = useTheme();
   const [modalVisible, setModalVisible] = useState(false);
 
   const handleSelect = (category: Category) => {
@@ -31,13 +33,24 @@ export const CategoryPicker: React.FC<CategoryPickerProps> = ({
   return (
     <>
       <TouchableOpacity
-        style={styles.container}
+        style={[
+          styles.container,
+          {
+            backgroundColor: colors.surfaceContainerLow,
+            borderColor: colors.border,
+          },
+        ]}
         onPress={() => setModalVisible(true)}
         activeOpacity={0.7}
       >
         <View style={styles.labelContainer}>
-          <Text style={styles.label}>Kategoria</Text>
-          <Text style={[styles.value, !value && styles.placeholder]}>
+          <Text style={[styles.label, { color: colors.gray }]}>Kategoria</Text>
+          <Text
+            style={[
+              styles.value,
+              { color: value ? colors.charcoal : colors.gray },
+            ]}
+          >
             {value || "Wybierz kategorię"}
           </Text>
         </View>
@@ -51,10 +64,22 @@ export const CategoryPicker: React.FC<CategoryPickerProps> = ({
         onRequestClose={() => setModalVisible(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+          <View
+            style={[
+              styles.modalContent,
+              { backgroundColor: colors.surface },
+            ]}
+          >
             <SafeAreaView>
-              <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>Wybierz kategorię</Text>
+              <View
+                style={[
+                  styles.modalHeader,
+                  { borderBottomColor: colors.border },
+                ]}
+              >
+                <Text style={[styles.modalTitle, { color: colors.charcoal }]}>
+                  Wybierz kategorię
+                </Text>
                 <TouchableOpacity
                   onPress={() => setModalVisible(false)}
                   hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
@@ -69,14 +94,24 @@ export const CategoryPicker: React.FC<CategoryPickerProps> = ({
                   <TouchableOpacity
                     style={[
                       styles.option,
-                      value === item && styles.optionSelected,
+                      { borderBottomColor: colors.border },
+                      value === item && {
+                        backgroundColor: `${colors.primary}10`,
+                      },
                     ]}
                     onPress={() => handleSelect(item)}
                   >
                     <Text
                       style={[
                         styles.optionText,
-                        value === item && styles.optionTextSelected,
+                        {
+                          color:
+                            value === item ? colors.primary : colors.charcoal,
+                          fontFamily:
+                            value === item
+                              ? fontFamily.semiBold
+                              : fontFamily.regular,
+                        },
                       ]}
                     >
                       {item}
@@ -101,10 +136,8 @@ export const CategoryPicker: React.FC<CategoryPickerProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: colors.white,
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: colors.border,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
     flexDirection: "row",
@@ -118,16 +151,11 @@ const styles = StyleSheet.create({
   label: {
     fontFamily: fontFamily.regular,
     fontSize: fontSize.xs,
-    color: colors.gray,
     marginBottom: 2,
   },
   value: {
     fontFamily: fontFamily.regular,
     fontSize: fontSize.md,
-    color: colors.charcoal,
-  },
-  placeholder: {
-    color: colors.gray,
   },
   modalOverlay: {
     flex: 1,
@@ -135,7 +163,6 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
   },
   modalContent: {
-    backgroundColor: colors.white,
     borderTopLeftRadius: radius.xl,
     borderTopRightRadius: radius.xl,
     paddingTop: spacing.lg,
@@ -149,12 +176,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.xl,
     paddingBottom: spacing.lg,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border,
   },
   modalTitle: {
     fontFamily: fontFamily.semiBold,
     fontSize: fontSize.lg,
-    color: colors.charcoal,
   },
   option: {
     flexDirection: "row",
@@ -163,18 +188,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.xl,
     paddingVertical: spacing.lg,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  optionSelected: {
-    backgroundColor: `${colors.primary}10`,
   },
   optionText: {
-    fontFamily: fontFamily.regular,
     fontSize: fontSize.md,
-    color: colors.charcoal,
-  },
-  optionTextSelected: {
-    fontFamily: fontFamily.semiBold,
-    color: colors.primary,
   },
 });

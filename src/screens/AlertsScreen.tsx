@@ -10,13 +10,8 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import {
-  colors,
-  fontFamily,
-  fontSize,
-  spacing,
-  radius,
-} from "../constants/theme";
+import { fontFamily, fontSize, spacing } from "../constants/theme";
+import { useTheme } from "../context/ThemeContext";
 import { useNotificationStore } from "../store/notificationStore";
 import { useProductStore } from "../store/productStore";
 import { Notification as NotificationType } from "../types";
@@ -49,14 +44,12 @@ const RECIPE_SUGGESTIONS = [
 
 export const AlertsScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
+  const { colors } = useTheme();
   const notifications = useNotificationStore((state) => state.notifications);
   const getNotificationsGrouped = useNotificationStore(
     (state) => state.getNotificationsGrouped
   );
   const markAllRead = useNotificationStore((state) => state.markAllRead);
-  const removeNotification = useNotificationStore(
-    (state) => state.removeNotification
-  );
   const getExpiringSoon = useProductStore((state) => state.getExpiringSoon);
 
   useEffect(() => {
@@ -91,18 +84,8 @@ export const AlertsScreen: React.FC = () => {
     [navigation]
   );
 
-  const renderNotification = useCallback(
-    ({ item }: { item: NotificationType }) => (
-      <NotificationCard
-        notification={item}
-        onPress={() => handleNotificationPress(item)}
-      />
-    ),
-    [handleNotificationPress]
-  );
-
   const renderSectionHeader = (title: string) => (
-    <Text style={styles.sectionTitle}>{title}</Text>
+    <Text style={[styles.sectionTitle, { color: colors.gray }]}>{title}</Text>
   );
 
   const renderContent = () => {
@@ -165,7 +148,7 @@ export const AlertsScreen: React.FC = () => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={styles.header}>
         <View style={styles.headerLeft}>
           <Ionicons
@@ -174,9 +157,14 @@ export const AlertsScreen: React.FC = () => {
             color={colors.primary}
             style={styles.headerIcon}
           />
-          <Text style={styles.headerTitle}>Powiadomienia</Text>
+          <Text style={[styles.headerTitle, { color: colors.charcoal }]}>
+            Powiadomienia
+          </Text>
         </View>
-        <TouchableOpacity style={styles.settingsButton}>
+        <TouchableOpacity
+          style={styles.settingsButton}
+          onPress={() => navigation.navigate("Settings")}
+        >
           <Ionicons name="settings-outline" size={24} color={colors.charcoal} />
         </TouchableOpacity>
       </View>
@@ -189,7 +177,6 @@ export const AlertsScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.neutral,
   },
   header: {
     flexDirection: "row",
@@ -208,7 +195,6 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontFamily: fontFamily.bold,
     fontSize: fontSize.xl,
-    color: colors.charcoal,
   },
   settingsButton: {
     padding: spacing.sm,
@@ -220,7 +206,6 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontFamily: fontFamily.semiBold,
     fontSize: fontSize.xs,
-    color: colors.gray,
     letterSpacing: 0.5,
     marginBottom: spacing.md,
     marginTop: spacing.lg,

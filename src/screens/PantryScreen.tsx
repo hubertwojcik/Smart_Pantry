@@ -13,13 +13,13 @@ import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import {
-  colors,
   fontFamily,
   fontSize,
   spacing,
   radius,
   shadows,
 } from "../constants/theme";
+import { useTheme } from "../context/ThemeContext";
 import { useProductStore } from "../store/productStore";
 import { Product, SortOption } from "../types";
 import { ProductCard, FilterChip, EmptyState } from "../components";
@@ -32,6 +32,7 @@ const ITEM_HEIGHT = 80;
 
 export const PantryScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
+  const { colors } = useTheme();
   const products = useProductStore((state) => state.products);
   const getExpiringSoon = useProductStore((state) => state.getExpiringSoon);
   const getSortedByExpiry = useProductStore((state) => state.getSortedByExpiry);
@@ -49,7 +50,6 @@ export const PantryScreen: React.FC = () => {
   }, []);
 
   const expiringSoon = getExpiringSoon();
-  const allProducts = getSortedByExpiry();
 
   const sortedProducts = useCallback(() => {
     const sorted = [...products];
@@ -62,13 +62,13 @@ export const PantryScreen: React.FC = () => {
       default:
         return sorted.sort(
           (a, b) =>
-            new Date(a.expiryDate).getTime() - new Date(b.expiryDate).getTime()
+            new Date(a.expiryDate).getTime() - new Date(b.expiryDate).getTime(),
         );
     }
   }, [products, sortBy]);
 
   const remainingProducts = sortedProducts().filter(
-    (p) => !expiringSoon.find((e) => e.id === p.id)
+    (p) => !expiringSoon.find((e) => e.id === p.id),
   );
 
   const onRefresh = useCallback(async () => {
@@ -81,7 +81,7 @@ export const PantryScreen: React.FC = () => {
     (productId: string) => {
       navigation.navigate("ProductDetail", { productId });
     },
-    [navigation]
+    [navigation],
   );
 
   const getItemLayout = useCallback(
@@ -90,11 +90,11 @@ export const PantryScreen: React.FC = () => {
       offset: ITEM_HEIGHT * index,
       index,
     }),
-    []
+    [],
   );
 
   const renderProductCard = useCallback(
-    ({ item, index }: { item: Product; index: number }) => {
+    ({ item }: { item: Product }) => {
       const animatedStyle = {
         opacity: fadeAnim,
         transform: [
@@ -116,7 +116,7 @@ export const PantryScreen: React.FC = () => {
         </Animated.View>
       );
     },
-    [fadeAnim, handleProductPress]
+    [fadeAnim, handleProductPress],
   );
 
   const renderHeader = () => (
@@ -142,9 +142,13 @@ export const PantryScreen: React.FC = () => {
       {expiringSoon.length > 0 && (
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>WYGASAJĄCE WKRÓTCE</Text>
+            <Text style={[styles.sectionTitle, { color: colors.gray }]}>
+              WYGASAJĄCE WKRÓTCE
+            </Text>
             <TouchableOpacity>
-              <Text style={styles.seeAll}>ZOBACZ WSZYSTKO</Text>
+              <Text style={[styles.seeAll, { color: colors.primary }]}>
+                ZOBACZ WSZYSTKO
+              </Text>
             </TouchableOpacity>
           </View>
           {expiringSoon.slice(0, 3).map((product, index) => (
@@ -173,7 +177,9 @@ export const PantryScreen: React.FC = () => {
 
       {remainingProducts.length > 0 && (
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>POZOSTAŁE ZAPASY</Text>
+          <Text style={[styles.sectionTitle, { color: colors.gray }]}>
+            POZOSTAŁE ZAPASY
+          </Text>
         </View>
       )}
     </View>
@@ -181,15 +187,30 @@ export const PantryScreen: React.FC = () => {
 
   if (products.length === 0) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView
+        style={[styles.container, { backgroundColor: colors.background }]}
+      >
         <View style={styles.header}>
-          <Text style={styles.title}>Inteligentna Spiżarnia</Text>
+          <Text style={[styles.title, { color: colors.charcoal }]}>
+            Inteligentna Spiżarnia
+          </Text>
           <View style={styles.headerIcons}>
             <TouchableOpacity style={styles.iconButton}>
-              <Ionicons name="search-outline" size={24} color={colors.charcoal} />
+              <Ionicons
+                name="search-outline"
+                size={24}
+                color={colors.charcoal}
+              />
             </TouchableOpacity>
-            <TouchableOpacity style={styles.iconButton}>
-              <Ionicons name="person-circle-outline" size={24} color={colors.charcoal} />
+            <TouchableOpacity
+              style={styles.iconButton}
+              onPress={() => navigation.navigate("Settings")}
+            >
+              <Ionicons
+                name="person-circle-outline"
+                size={24}
+                color={colors.charcoal}
+              />
             </TouchableOpacity>
           </View>
         </View>
@@ -199,22 +220,35 @@ export const PantryScreen: React.FC = () => {
           title="Spiżarnia jest pusta"
           subtitle="Dodaj swoje pierwsze produkty, aby śledzić ich daty ważności"
           actionLabel="Dodaj pierwszy produkt"
-          onAction={() => navigation.navigate("MainTabs", { screen: "AddTab" } as any)}
+          onAction={() =>
+            navigation.navigate("MainTabs", { screen: "AddTab" } as any)
+          }
         />
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: colors.background }]}
+    >
       <View style={styles.header}>
-        <Text style={styles.title}>Inteligentna Spiżarnia</Text>
+        <Text style={[styles.title, { color: colors.charcoal }]}>
+          Inteligentna Spiżarnia
+        </Text>
         <View style={styles.headerIcons}>
           <TouchableOpacity style={styles.iconButton}>
             <Ionicons name="search-outline" size={24} color={colors.charcoal} />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.iconButton}>
-            <Ionicons name="person-circle-outline" size={24} color={colors.charcoal} />
+          <TouchableOpacity
+            style={styles.iconButton}
+            onPress={() => navigation.navigate("Settings")}
+          >
+            <Ionicons
+              name="person-circle-outline"
+              size={24}
+              color={colors.charcoal}
+            />
           </TouchableOpacity>
         </View>
       </View>
@@ -235,14 +269,6 @@ export const PantryScreen: React.FC = () => {
         }
         getItemLayout={getItemLayout}
       />
-
-      <TouchableOpacity
-        style={styles.fab}
-        onPress={() => navigation.navigate("MainTabs", { screen: "AddTab" } as any)}
-        activeOpacity={0.8}
-      >
-        <Ionicons name="add" size={28} color={colors.white} />
-      </TouchableOpacity>
     </SafeAreaView>
   );
 };
@@ -250,7 +276,6 @@ export const PantryScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.neutral,
   },
   header: {
     flexDirection: "row",
@@ -262,7 +287,6 @@ const styles = StyleSheet.create({
   title: {
     fontFamily: fontFamily.bold,
     fontSize: fontSize.xxl,
-    color: colors.charcoal,
   },
   headerIcons: {
     flexDirection: "row",
@@ -289,13 +313,11 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontFamily: fontFamily.semiBold,
     fontSize: fontSize.xs,
-    color: colors.gray,
     letterSpacing: 0.5,
   },
   seeAll: {
     fontFamily: fontFamily.semiBold,
     fontSize: fontSize.xs,
-    color: colors.primary,
     letterSpacing: 0.5,
   },
   listContent: {
@@ -309,7 +331,6 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: colors.primary,
     justifyContent: "center",
     alignItems: "center",
     ...shadows.elevated,

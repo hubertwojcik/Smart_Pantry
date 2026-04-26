@@ -3,3 +3,6 @@ export { AddProductScreen } from "./AddProductScreen";
 export { AlertsScreen } from "./AlertsScreen";
 export { ProductDetailScreen } from "./ProductDetailScreen";
 export { BarcodeScannerScreen } from "./BarcodeScannerScreen";
+export { LoginScreen } from "./LoginScreen";
+export { RegisterScreen } from "./RegisterScreen";
+export { SettingsScreen } from "./SettingsScreen";

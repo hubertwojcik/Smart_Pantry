@@ -12,14 +12,8 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import {
-  colors,
-  fontFamily,
-  fontSize,
-  spacing,
-  radius,
-  shadows,
-} from "../constants/theme";
+import { fontFamily, fontSize, spacing, radius, shadows } from "../constants/theme";
+import { useTheme } from "../context/ThemeContext";
 import { useProductStore } from "../store/productStore";
 import { Category } from "../types";
 import { RootStackParamList } from "../navigation";
@@ -37,45 +31,32 @@ type RouteProps = RouteProp<RootStackParamList, "ProductDetail">;
 
 const getCategoryIcon = (category: Category): keyof typeof Ionicons.glyphMap => {
   switch (category) {
-    case "Nabiał":
-      return "water-outline";
-    case "Pieczywo":
-      return "pizza-outline";
-    case "Mięso":
-      return "fish-outline";
-    case "Warzywa":
-      return "leaf-outline";
-    case "Suche":
-      return "cube-outline";
-    case "Napoje":
-      return "cafe-outline";
-    default:
-      return "basket-outline";
+    case "Nabiał": return "water-outline";
+    case "Pieczywo": return "pizza-outline";
+    case "Mięso": return "fish-outline";
+    case "Warzywa": return "leaf-outline";
+    case "Suche": return "cube-outline";
+    case "Napoje": return "cafe-outline";
+    default: return "basket-outline";
   }
 };
 
 const getCategoryColor = (category: Category): string => {
   switch (category) {
-    case "Nabiał":
-      return "#60A5FA";
-    case "Pieczywo":
-      return "#FBBF24";
-    case "Mięso":
-      return "#F87171";
-    case "Warzywa":
-      return "#34D399";
-    case "Suche":
-      return "#A78BFA";
-    case "Napoje":
-      return "#F472B6";
-    default:
-      return colors.gray;
+    case "Nabiał": return "#60A5FA";
+    case "Pieczywo": return "#FBBF24";
+    case "Mięso": return "#F87171";
+    case "Warzywa": return "#34D399";
+    case "Suche": return "#A78BFA";
+    case "Napoje": return "#F472B6";
+    default: return "#78716C";
   }
 };
 
 export const ProductDetailScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteProps>();
+  const { colors, isDark } = useTheme();
   const { productId } = route.params;
 
   const product = useProductStore((state) => state.getProductById(productId));
@@ -83,17 +64,16 @@ export const ProductDetailScreen: React.FC = () => {
 
   if (!product) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
         <View style={styles.header}>
-          <TouchableOpacity
-            onPress={() => navigation.goBack()}
-            style={styles.backButton}
-          >
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
             <Ionicons name="arrow-back" size={24} color={colors.charcoal} />
           </TouchableOpacity>
         </View>
         <View style={styles.notFound}>
-          <Text style={styles.notFoundText}>Produkt nie został znaleziony</Text>
+          <Text style={[styles.notFoundText, { color: colors.gray }]}>
+            Produkt nie został znaleziony
+          </Text>
         </View>
       </SafeAreaView>
     );
@@ -126,27 +106,22 @@ export const ProductDetailScreen: React.FC = () => {
   }, [product, removeProduct, navigation]);
 
   const getStatusMessage = () => {
-    if (status === "expired") {
-      return `Przeterminowany ${Math.abs(daysLeft)} dni temu`;
-    } else if (daysLeft === 0) {
-      return "Wygasa dzisiaj!";
-    } else if (daysLeft === 1) {
-      return "Wygasa jutro!";
-    } else {
-      return `Wygasa za ${daysLeft} dni`;
-    }
+    if (status === "expired") return `Przeterminowany ${Math.abs(daysLeft)} dni temu`;
+    if (daysLeft === 0) return "Wygasa dzisiaj!";
+    if (daysLeft === 1) return "Wygasa jutro!";
+    return `Wygasa za ${daysLeft} dni`;
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={styles.backButton}
-        >
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color={colors.charcoal} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle} numberOfLines={1}>
+        <Text
+          style={[styles.headerTitle, { color: colors.charcoal }]}
+          numberOfLines={1}
+        >
           {product.name}
         </Text>
         <TouchableOpacity style={styles.editButton}>
@@ -186,49 +161,61 @@ export const ProductDetailScreen: React.FC = () => {
         </View>
 
         <View style={styles.infoGrid}>
-          <View style={styles.infoCard}>
-            <Text style={styles.infoLabel}>Gramatura</Text>
-            <Text style={styles.infoValue}>
-              {product.weight > 0
-                ? `${product.weight} ${product.weightUnit}`
-                : `${product.quantity} szt`}
-            </Text>
-          </View>
-          <View style={styles.infoCard}>
-            <Text style={styles.infoLabel}>Kategoria</Text>
-            <Text style={styles.infoValue}>{product.category}</Text>
-          </View>
-          <View style={styles.infoCard}>
-            <Text style={styles.infoLabel}>Lokalizacja</Text>
-            <Text style={styles.infoValue}>{product.location || "Nie określono"}</Text>
-          </View>
-          <View style={styles.infoCard}>
-            <Text style={styles.infoLabel}>Dodano</Text>
-            <Text style={styles.infoValue}>{formatDate(product.addedAt)}</Text>
-          </View>
+          {[
+            { label: "Gramatura", value: product.weight > 0 ? `${product.weight} ${product.weightUnit}` : `${product.quantity} szt` },
+            { label: "Kategoria", value: product.category },
+            { label: "Lokalizacja", value: product.location || "Nie określono" },
+            { label: "Dodano", value: formatDate(product.addedAt) },
+          ].map(({ label, value }) => (
+            <View
+              key={label}
+              style={[
+                styles.infoCard,
+                { backgroundColor: colors.surface },
+                isDark && styles.infoCardDark,
+              ]}
+            >
+              <Text style={[styles.infoLabel, { color: colors.gray }]}>{label}</Text>
+              <Text style={[styles.infoValue, { color: colors.charcoal }]}>{value}</Text>
+            </View>
+          ))}
         </View>
 
-        <View style={styles.expirySection}>
-          <Text style={styles.expirySectionTitle}>Data ważności</Text>
-          <Text style={styles.expiryDate}>{formatDate(product.expiryDate)}</Text>
+        <View
+          style={[
+            styles.expirySection,
+            { backgroundColor: colors.surface },
+            isDark && styles.infoCardDark,
+          ]}
+        >
+          <Text style={[styles.expirySectionTitle, { color: colors.gray }]}>
+            Data ważności
+          </Text>
+          <Text style={[styles.expiryDate, { color: colors.charcoal }]}>
+            {formatDate(product.expiryDate)}
+          </Text>
         </View>
       </ScrollView>
 
-      <View style={styles.bottomContainer}>
+      <View style={[styles.bottomContainer, { backgroundColor: colors.background }]}>
         <TouchableOpacity
-          style={styles.consumeButton}
+          style={[styles.consumeButton, { backgroundColor: colors.primary }]}
           onPress={handleDelete}
           activeOpacity={0.8}
         >
-          <Ionicons
-            name="checkmark-circle-outline"
-            size={20}
-            color={colors.white}
-          />
-          <Text style={styles.consumeButtonText}>Zjedzone / Zużyte</Text>
+          <Ionicons name="checkmark-circle-outline" size={20} color={colors.white} />
+          <Text style={[styles.consumeButtonText, { color: colors.white }]}>
+            Zjedzone / Zużyte
+          </Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.editButtonBottom} activeOpacity={0.8}>
-          <Text style={styles.editButtonText}>Edytuj</Text>
+        <TouchableOpacity
+          style={[
+            styles.editButtonBottom,
+            { backgroundColor: colors.surface, borderColor: colors.border },
+          ]}
+          activeOpacity={0.8}
+        >
+          <Text style={[styles.editButtonText, { color: colors.charcoal }]}>Edytuj</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -238,7 +225,6 @@ export const ProductDetailScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.neutral,
   },
   header: {
     flexDirection: "row",
@@ -254,7 +240,6 @@ const styles = StyleSheet.create({
     flex: 1,
     fontFamily: fontFamily.semiBold,
     fontSize: fontSize.lg,
-    color: colors.charcoal,
     textAlign: "center",
     marginHorizontal: spacing.md,
   },
@@ -295,13 +280,13 @@ const styles = StyleSheet.create({
   statusLabel: {
     fontFamily: fontFamily.bold,
     fontSize: fontSize.lg,
-    color: colors.white,
+    color: "#FFFFFF",
     marginBottom: spacing.xs,
   },
   statusMessage: {
     fontFamily: fontFamily.regular,
     fontSize: fontSize.sm,
-    color: colors.white,
+    color: "#FFFFFF",
     opacity: 0.9,
   },
   infoGrid: {
@@ -313,25 +298,25 @@ const styles = StyleSheet.create({
   },
   infoCard: {
     width: "47%",
-    backgroundColor: colors.white,
     borderRadius: radius.md,
     padding: spacing.lg,
     ...shadows.card,
   },
+  infoCardDark: {
+    shadowOpacity: 0,
+    elevation: 0,
+  },
   infoLabel: {
     fontFamily: fontFamily.regular,
     fontSize: fontSize.xs,
-    color: colors.gray,
     marginBottom: spacing.xs,
   },
   infoValue: {
     fontFamily: fontFamily.semiBold,
     fontSize: fontSize.md,
-    color: colors.charcoal,
   },
   expirySection: {
     marginHorizontal: spacing.xl,
-    backgroundColor: colors.white,
     borderRadius: radius.md,
     padding: spacing.xl,
     alignItems: "center",
@@ -340,13 +325,11 @@ const styles = StyleSheet.create({
   expirySectionTitle: {
     fontFamily: fontFamily.regular,
     fontSize: fontSize.sm,
-    color: colors.gray,
     marginBottom: spacing.sm,
   },
   expiryDate: {
     fontFamily: fontFamily.bold,
     fontSize: fontSize.xxl,
-    color: colors.charcoal,
   },
   notFound: {
     flex: 1,
@@ -356,19 +339,16 @@ const styles = StyleSheet.create({
   notFoundText: {
     fontFamily: fontFamily.regular,
     fontSize: fontSize.md,
-    color: colors.gray,
   },
   bottomContainer: {
     flexDirection: "row",
     paddingHorizontal: spacing.xl,
     paddingVertical: spacing.lg,
     gap: spacing.md,
-    backgroundColor: colors.neutral,
   },
   consumeButton: {
     flex: 1,
     flexDirection: "row",
-    backgroundColor: colors.primary,
     borderRadius: radius.md,
     paddingVertical: spacing.lg,
     alignItems: "center",
@@ -379,21 +359,17 @@ const styles = StyleSheet.create({
   consumeButtonText: {
     fontFamily: fontFamily.semiBold,
     fontSize: fontSize.md,
-    color: colors.white,
   },
   editButtonBottom: {
     flex: 1,
-    backgroundColor: colors.white,
     borderRadius: radius.md,
     paddingVertical: spacing.lg,
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
-    borderColor: colors.border,
   },
   editButtonText: {
     fontFamily: fontFamily.semiBold,
     fontSize: fontSize.md,
-    color: colors.charcoal,
   },
 });

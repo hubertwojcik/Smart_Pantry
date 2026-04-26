@@ -1,7 +1,29 @@
-export const colors = {
+export type ThemeColors = {
+  primary: string;
+  secondary: string;
+  tertiary: string;
+  background: string;
+  surface: string;
+  neutral: string;
+  white: string;
+  charcoal: string;
+  gray: string;
+  border: string;
+  statusRed: string;
+  statusAmber: string;
+  statusGreen: string;
+  surfaceContainerLow: string;
+  surfaceContainerHigh: string;
+  tabBarBg: string;
+  tabBarBorder: string;
+};
+
+export const lightColors: ThemeColors = {
   primary: "#F97316",
   secondary: "#4ADE80",
   tertiary: "#F59E0B",
+  background: "#FAFAF9",
+  surface: "#FFFFFF",
   neutral: "#FAFAF9",
   white: "#FFFFFF",
   charcoal: "#1C1917",
@@ -12,7 +34,31 @@ export const colors = {
   statusGreen: "#4ADE80",
   surfaceContainerLow: "#F5F5F4",
   surfaceContainerHigh: "#E7E5E4",
+  tabBarBg: "#FFFFFF",
+  tabBarBorder: "transparent",
 };
+
+export const darkColors: ThemeColors = {
+  primary: "#F97316",
+  secondary: "#4ADE80",
+  tertiary: "#F59E0B",
+  background: "#0C0A09",
+  surface: "#1C1917",
+  neutral: "#0C0A09",
+  white: "#FFFFFF",
+  charcoal: "#F5F5F4",
+  gray: "#A8A29E",
+  border: "#292524",
+  statusRed: "#F87171",
+  statusAmber: "#FCD34D",
+  statusGreen: "#4ADE80",
+  surfaceContainerLow: "#1C1917",
+  surfaceContainerHigh: "#292524",
+  tabBarBg: "rgba(12, 10, 9, 0.97)",
+  tabBarBorder: "#292524",
+};
+
+export const colors = lightColors;
 
 export const spacing = {
   xs: 4,

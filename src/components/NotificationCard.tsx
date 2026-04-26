@@ -1,16 +1,10 @@
 import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import {
-  colors,
-  radius,
-  fontFamily,
-  fontSize,
-  spacing,
-  shadows,
-} from "../constants/theme";
+import { radius, fontFamily, fontSize, spacing, shadows } from "../constants/theme";
+import { useTheme } from "../context/ThemeContext";
 import { Notification as NotificationType, ExpiryStatus } from "../types";
-import { getStatusColor, formatRelativeTime, getDaysUntilExpiry } from "../services/expiryService";
+import { getStatusColor, formatRelativeTime } from "../services/expiryService";
 
 interface NotificationCardProps {
   notification: NotificationType;
@@ -20,12 +14,12 @@ interface NotificationCardProps {
 
 const getIconForStatus = (
   status: ExpiryStatus,
-  type: string
+  type: string,
+  colors: { statusGreen: string; statusRed: string; statusAmber: string; gray: string }
 ): { name: keyof typeof Ionicons.glyphMap; color: string } => {
   if (type === "restock") {
     return { name: "checkmark-circle", color: colors.statusGreen };
   }
-
   switch (status) {
     case "expired":
     case "critical":
@@ -44,7 +38,12 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
   onPress,
   onDismiss,
 }) => {
-  const { name, color } = getIconForStatus(notification.status, notification.type);
+  const { colors, isDark } = useTheme();
+  const { name, color } = getIconForStatus(
+    notification.status,
+    notification.type,
+    colors
+  );
   const timeString = formatRelativeTime(notification.createdAt);
 
   const progressWidth =
@@ -58,7 +57,11 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
 
   return (
     <TouchableOpacity
-      style={styles.card}
+      style={[
+        styles.card,
+        { backgroundColor: colors.surface },
+        isDark && styles.cardDark,
+      ]}
       onPress={onPress}
       activeOpacity={0.7}
       disabled={!onPress}
@@ -68,15 +71,26 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
       </View>
       <View style={styles.content}>
         <View style={styles.header}>
-          <Text style={styles.productName} numberOfLines={1}>
+          <Text
+            style={[styles.productName, { color: colors.charcoal }]}
+            numberOfLines={1}
+          >
             {notification.productName}
           </Text>
-          <Text style={styles.time}>{timeString}</Text>
+          <Text style={[styles.time, { color: colors.gray }]}>{timeString}</Text>
         </View>
-        <Text style={styles.message} numberOfLines={2}>
+        <Text
+          style={[styles.message, { color: colors.gray }]}
+          numberOfLines={2}
+        >
           {notification.message}
         </Text>
-        <View style={styles.progressContainer}>
+        <View
+          style={[
+            styles.progressContainer,
+            { backgroundColor: colors.surfaceContainerLow },
+          ]}
+        >
           <View
             style={[
               styles.progressBar,
@@ -91,12 +105,15 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: colors.white,
     borderRadius: radius.lg,
     padding: spacing.lg,
     marginBottom: spacing.md,
     flexDirection: "row",
     ...shadows.card,
+  },
+  cardDark: {
+    shadowOpacity: 0,
+    elevation: 0,
   },
   iconContainer: {
     width: 44,
@@ -118,24 +135,20 @@ const styles = StyleSheet.create({
   productName: {
     fontFamily: fontFamily.semiBold,
     fontSize: fontSize.md,
-    color: colors.charcoal,
     flex: 1,
     marginRight: spacing.sm,
   },
   time: {
     fontFamily: fontFamily.regular,
     fontSize: fontSize.xs,
-    color: colors.gray,
   },
   message: {
     fontFamily: fontFamily.regular,
     fontSize: fontSize.sm,
-    color: colors.gray,
     marginBottom: spacing.sm,
   },
   progressContainer: {
     height: 4,
-    backgroundColor: colors.surfaceContainerLow,
     borderRadius: 2,
     overflow: "hidden",
   },

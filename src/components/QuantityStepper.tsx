@@ -1,7 +1,8 @@
 import React from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { colors, radius, fontFamily, fontSize, spacing } from "../constants/theme";
+import { radius, fontFamily, fontSize, spacing } from "../constants/theme";
+import { useTheme } from "../context/ThemeContext";
 
 interface QuantityStepperProps {
   value: number;
@@ -16,23 +17,16 @@ export const QuantityStepper: React.FC<QuantityStepperProps> = ({
   min = 1,
   max = 99,
 }) => {
-  const handleDecrement = () => {
-    if (value > min) {
-      onChange(value - 1);
-    }
-  };
-
-  const handleIncrement = () => {
-    if (value < max) {
-      onChange(value + 1);
-    }
-  };
+  const { colors } = useTheme();
 
   return (
     <View style={styles.container}>
       <TouchableOpacity
-        style={[styles.button, styles.decrementButton]}
-        onPress={handleDecrement}
+        style={[
+          styles.button,
+          { backgroundColor: colors.surfaceContainerHigh },
+        ]}
+        onPress={() => value > min && onChange(value - 1)}
         disabled={value <= min}
         activeOpacity={0.7}
       >
@@ -43,11 +37,11 @@ export const QuantityStepper: React.FC<QuantityStepperProps> = ({
         />
       </TouchableOpacity>
       <View style={styles.valueContainer}>
-        <Text style={styles.value}>{value}</Text>
+        <Text style={[styles.value, { color: colors.charcoal }]}>{value}</Text>
       </View>
       <TouchableOpacity
-        style={[styles.button, styles.incrementButton]}
-        onPress={handleIncrement}
+        style={[styles.button, { backgroundColor: colors.primary }]}
+        onPress={() => value < max && onChange(value + 1)}
         disabled={value >= max}
         activeOpacity={0.7}
       >
@@ -73,12 +67,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  decrementButton: {
-    backgroundColor: colors.surfaceContainerLow,
-  },
-  incrementButton: {
-    backgroundColor: colors.primary,
-  },
   valueContainer: {
     minWidth: 48,
     alignItems: "center",
@@ -87,6 +75,5 @@ const styles = StyleSheet.create({
   value: {
     fontFamily: fontFamily.semiBold,
     fontSize: fontSize.lg,
-    color: colors.charcoal,
   },
 });

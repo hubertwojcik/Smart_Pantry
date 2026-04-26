@@ -1,7 +1,8 @@
 import React from "react";
-import { View, Text, StyleSheet, TouchableOpacity, ImageBackground } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { colors, radius, fontFamily, fontSize, spacing } from "../constants/theme";
+import { radius, fontFamily, fontSize, spacing } from "../constants/theme";
+import { useTheme } from "../context/ThemeContext";
 
 interface RecipeSuggestionCardProps {
   title: string;
@@ -14,13 +15,20 @@ export const RecipeSuggestionCard: React.FC<RecipeSuggestionCardProps> = ({
   description,
   onPress,
 }) => {
+  const { colors, isDark } = useTheme();
+  const cardBg = isDark ? "#292524" : "#1C1917";
+
   return (
-    <View style={styles.card}>
+    <View style={[styles.card, { backgroundColor: cardBg }]}>
       <Text style={styles.title}>{title}</Text>
-      <Text style={styles.description}>{description}</Text>
-      <TouchableOpacity style={styles.button} onPress={onPress} activeOpacity={0.8}>
+      <Text style={[styles.description, { color: colors.gray }]}>{description}</Text>
+      <TouchableOpacity
+        style={[styles.button, { backgroundColor: colors.primary }]}
+        onPress={onPress}
+        activeOpacity={0.8}
+      >
         <Text style={styles.buttonText}>Zobacz przepis</Text>
-        <Ionicons name="arrow-forward" size={16} color={colors.white} />
+        <Ionicons name="arrow-forward" size={16} color="#FFFFFF" />
       </TouchableOpacity>
     </View>
   );
@@ -28,7 +36,6 @@ export const RecipeSuggestionCard: React.FC<RecipeSuggestionCardProps> = ({
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: colors.charcoal,
     borderRadius: radius.lg,
     padding: spacing.xl,
     marginBottom: spacing.lg,
@@ -36,18 +43,16 @@ const styles = StyleSheet.create({
   title: {
     fontFamily: fontFamily.semiBold,
     fontSize: fontSize.lg,
-    color: colors.white,
+    color: "#FFFFFF",
     marginBottom: spacing.sm,
   },
   description: {
     fontFamily: fontFamily.regular,
     fontSize: fontSize.sm,
-    color: colors.gray,
     marginBottom: spacing.lg,
     lineHeight: 20,
   },
   button: {
-    backgroundColor: colors.primary,
     borderRadius: radius.sm,
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.lg,
@@ -58,7 +63,7 @@ const styles = StyleSheet.create({
   buttonText: {
     fontFamily: fontFamily.semiBold,
     fontSize: fontSize.sm,
-    color: colors.white,
+    color: "#FFFFFF",
     marginRight: spacing.sm,
   },
 });

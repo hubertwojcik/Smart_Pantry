@@ -1,6 +1,7 @@
 import React from "react";
 import { TouchableOpacity, Text, StyleSheet } from "react-native";
-import { colors, radius, fontFamily, fontSize, spacing } from "../constants/theme";
+import { radius, fontFamily, fontSize, spacing } from "../constants/theme";
+import { useTheme } from "../context/ThemeContext";
 
 interface FilterChipProps {
   label: string;
@@ -13,13 +14,28 @@ export const FilterChip: React.FC<FilterChipProps> = ({
   active,
   onPress,
 }) => {
+  const { colors } = useTheme();
+
   return (
     <TouchableOpacity
-      style={[styles.chip, active && styles.chipActive]}
+      style={[
+        styles.chip,
+        {
+          backgroundColor: active ? colors.primary : colors.surface,
+          borderColor: active ? colors.primary : colors.border,
+        },
+      ]}
       onPress={onPress}
       activeOpacity={0.7}
     >
-      <Text style={[styles.text, active && styles.textActive]}>{label}</Text>
+      <Text
+        style={[
+          styles.text,
+          { color: active ? colors.white : colors.primary },
+        ]}
+      >
+        {label}
+      </Text>
     </TouchableOpacity>
   );
 };
@@ -29,21 +45,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
     borderRadius: radius.pill,
-    backgroundColor: colors.white,
     borderWidth: 1,
-    borderColor: colors.primary,
     marginRight: spacing.sm,
-  },
-  chipActive: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
   },
   text: {
     fontFamily: fontFamily.medium,
     fontSize: fontSize.sm,
-    color: colors.primary,
-  },
-  textActive: {
-    color: colors.white,
   },
 });
