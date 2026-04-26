@@ -12,13 +12,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import {
-  fontFamily,
-  fontSize,
-  spacing,
-  radius,
-  shadows,
-} from "../constants/theme";
+import { fontFamily, fontSize, spacing, shadows } from "../constants/theme";
 import { useTheme } from "../context/ThemeContext";
 import { useProductStore } from "../store/productStore";
 import { Product, SortOption } from "../types";
@@ -35,7 +29,6 @@ export const PantryScreen: React.FC = () => {
   const { colors } = useTheme();
   const products = useProductStore((state) => state.products);
   const getExpiringSoon = useProductStore((state) => state.getExpiringSoon);
-  const getSortedByExpiry = useProductStore((state) => state.getSortedByExpiry);
 
   const [refreshing, setRefreshing] = useState(false);
   const [sortBy, setSortBy] = useState<SortOption>("expiryDate");
@@ -51,25 +44,37 @@ export const PantryScreen: React.FC = () => {
 
   const expiringSoon = getExpiringSoon();
 
-  const sortedProducts = useCallback(() => {
-    const sorted = [...products];
-    switch (sortBy) {
-      case "name":
-        return sorted.sort((a, b) => a.name.localeCompare(b.name));
-      case "category":
-        return sorted.sort((a, b) => a.category.localeCompare(b.category));
-      case "expiryDate":
-      default:
-        return sorted.sort(
-          (a, b) =>
-            new Date(a.expiryDate).getTime() - new Date(b.expiryDate).getTime(),
-        );
-    }
-  }, [products, sortBy]);
-
-  const remainingProducts = sortedProducts().filter(
-    (p) => !expiringSoon.find((e) => e.id === p.id),
+  const sortProducts = useCallback(
+    (list: Product[]) => {
+      const sorted = [...list];
+      switch (sortBy) {
+        case "name":
+          return sorted.sort((a, b) => a.name.localeCompare(b.name));
+        case "category":
+          return sorted.sort((a, b) => a.category.localeCompare(b.category));
+        case "expiryDate":
+        default:
+          return sorted.sort(
+            (a, b) =>
+              new Date(a.expiryDate).getTime() -
+              new Date(b.expiryDate).getTime(),
+          );
+      }
+    },
+    [sortBy],
   );
+
+  // When sorting by name or category show all products together without
+  // the expiring-soon split (otherwise products already in the header
+  // disappear from the list and sorting looks broken).
+  const isGrouped = sortBy === "expiryDate";
+
+  const sortedExpiringSoon = isGrouped ? expiringSoon : [];
+  const remainingProducts = isGrouped
+    ? sortProducts(
+        products.filter((p) => !expiringSoon.find((e) => e.id === p.id)),
+      )
+    : sortProducts(products);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -94,28 +99,26 @@ export const PantryScreen: React.FC = () => {
   );
 
   const renderProductCard = useCallback(
-    ({ item }: { item: Product }) => {
-      const animatedStyle = {
-        opacity: fadeAnim,
-        transform: [
-          {
-            translateY: fadeAnim.interpolate({
-              inputRange: [0, 1],
-              outputRange: [20, 0],
-            }),
-          },
-        ],
-      };
-
-      return (
-        <Animated.View style={animatedStyle}>
-          <ProductCard
-            product={item}
-            onPress={() => handleProductPress(item.id)}
-          />
-        </Animated.View>
-      );
-    },
+    ({ item }: { item: Product }) => (
+      <Animated.View
+        style={{
+          opacity: fadeAnim,
+          transform: [
+            {
+              translateY: fadeAnim.interpolate({
+                inputRange: [0, 1],
+                outputRange: [20, 0],
+              }),
+            },
+          ],
+        }}
+      >
+        <ProductCard
+          product={item}
+          onPress={() => handleProductPress(item.id)}
+        />
+      </Animated.View>
+    ),
     [fadeAnim, handleProductPress],
   );
 
@@ -139,7 +142,7 @@ export const PantryScreen: React.FC = () => {
         />
       </View>
 
-      {expiringSoon.length > 0 && (
+      {sortedExpiringSoon.length > 0 && (
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={[styles.sectionTitle, { color: colors.gray }]}>
@@ -151,7 +154,7 @@ export const PantryScreen: React.FC = () => {
               </Text>
             </TouchableOpacity>
           </View>
-          {expiringSoon.slice(0, 3).map((product, index) => (
+          {sortedExpiringSoon.slice(0, 3).map((product, index) => (
             <Animated.View
               key={product.id}
               style={{
@@ -178,7 +181,7 @@ export const PantryScreen: React.FC = () => {
       {remainingProducts.length > 0 && (
         <View style={styles.sectionHeader}>
           <Text style={[styles.sectionTitle, { color: colors.gray }]}>
-            POZOSTAŁE ZAPASY
+            {isGrouped ? "POZOSTAŁE ZAPASY" : "WSZYSTKIE PRODUKTY"}
           </Text>
         </View>
       )}
@@ -269,6 +272,16 @@ export const PantryScreen: React.FC = () => {
         }
         getItemLayout={getItemLayout}
       />
+
+      <TouchableOpacity
+        style={[styles.fab, { backgroundColor: colors.primary }]}
+        onPress={() =>
+          navigation.navigate("MainTabs", { screen: "AddTab" } as any)
+        }
+        activeOpacity={0.8}
+      >
+        <Ionicons name="add" size={28} color={colors.white} />
+      </TouchableOpacity>
     </SafeAreaView>
   );
 };
