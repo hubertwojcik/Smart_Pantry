@@ -18,11 +18,13 @@ import * as Notifications from "expo-notifications";
 import { Navigation } from "./src/navigation";
 import { ThemeProvider, useTheme } from "./src/context/ThemeContext";
 import { useProductStore } from "./src/store/productStore";
+import { useAuthStore } from "./src/store/authStore";
 import {
   requestNotificationPermissions,
   runExpiryCheckForeground,
 } from "./src/services/notificationService";
 import { registerBackgroundTask } from "./src/services/backgroundTask";
+import { clearLegacyStorage } from "./src/storage";
 
 import "./src/services/backgroundTask";
 
@@ -40,6 +42,7 @@ const AppContent = () => {
   const { isDark, colors } = useTheme();
   const [appIsReady, setAppIsReady] = useState(false);
   const products = useProductStore((state) => state.products);
+  const isInitializing = useAuthStore((state) => state.isInitializing);
 
   const [fontsLoaded] = useFonts({
     Manrope_400Regular,
@@ -51,6 +54,7 @@ const AppContent = () => {
   useEffect(() => {
     async function prepare() {
       try {
+        clearLegacyStorage();
         await requestNotificationPermissions();
         registerBackgroundTask().catch(() => {});
       } catch (e) {
@@ -64,6 +68,13 @@ const AppContent = () => {
       prepare();
     }
   }, [fontsLoaded]);
+
+  // Sprawdzenie sesji Firebase z expo-secure-store na starcie aplikacji.
+  // Subskrypcja ustawia authStore (zalogowany / nie) i wyłącza isInitializing.
+  useEffect(() => {
+    const unsubscribe = useAuthStore.getState().initialize();
+    return unsubscribe;
+  }, []);
 
   useEffect(() => {
     const subscription = Notifications.addNotificationResponseReceivedListener(
@@ -83,7 +94,7 @@ const AppContent = () => {
     }
   }, [appIsReady, products]);
 
-  if (!fontsLoaded || !appIsReady) {
+  if (!fontsLoaded || !appIsReady || isInitializing) {
     return (
       <View
         style={[

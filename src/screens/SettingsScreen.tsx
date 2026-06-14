@@ -9,14 +9,19 @@ import {
   ScrollView,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import Animated, { FadeInDown } from "react-native-reanimated";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useTheme } from "../context/ThemeContext";
 import { useAuthStore } from "../store/authStore";
+import { analytics } from "../services/analytics";
 import { fontFamily, fontSize, spacing, radius, shadows } from "../constants/theme";
 import { RootStackParamList } from "../navigation";
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
+
+// Kaskada wejścia "z góry na dół" (jak na ekranie Zapasy).
+const ENTER_STEP = 60;
 
 export const SettingsScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
@@ -24,15 +29,28 @@ export const SettingsScreen: React.FC = () => {
   const user = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
 
+  const handleLogout = () => {
+    // Wysyłamy zdarzenie zanim sesja zniknie (token jest jeszcze dostępny).
+    analytics.track("logout");
+    logout();
+  };
+
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color={colors.charcoal} />
-        </TouchableOpacity>
+        {navigation.canGoBack() ? (
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+          >
+            <Ionicons name="arrow-back" size={24} color={colors.charcoal} />
+          </TouchableOpacity>
+        ) : (
+          <View style={styles.backButton} />
+        )}
         <Text style={[styles.headerTitle, { color: colors.charcoal }]}>
-          Ustawienia
+          Profil
         </Text>
         <View style={styles.backButton} />
       </View>
@@ -42,12 +60,13 @@ export const SettingsScreen: React.FC = () => {
         showsVerticalScrollIndicator={false}
       >
         {/* User card */}
-        <View
+        <Animated.View
           style={[
             styles.userCard,
             { backgroundColor: colors.surface, borderColor: colors.border },
             isDark && styles.cardDark,
           ]}
+          entering={FadeInDown.delay(0).springify()}
         >
           <View style={[styles.avatarCircle, { backgroundColor: `${colors.primary}20` }]}>
             <Ionicons name="person" size={32} color={colors.primary} />
@@ -60,18 +79,21 @@ export const SettingsScreen: React.FC = () => {
               {user?.email ?? ""}
             </Text>
           </View>
-        </View>
+        </Animated.View>
 
         {/* Wygląd */}
-        <Text style={[styles.sectionLabel, { color: colors.gray }]}>WYGLĄD</Text>
+        <Animated.View entering={FadeInDown.delay(ENTER_STEP).springify()}>
+          <Text style={[styles.sectionLabel, { color: colors.gray }]}>
+            WYGLĄD
+          </Text>
 
-        <View
-          style={[
-            styles.section,
-            { backgroundColor: colors.surface, borderColor: colors.border },
-            isDark && styles.cardDark,
-          ]}
-        >
+          <View
+            style={[
+              styles.section,
+              { backgroundColor: colors.surface, borderColor: colors.border },
+              isDark && styles.cardDark,
+            ]}
+          >
           <View style={styles.row}>
             <View style={styles.rowLeft}>
               <View style={[styles.rowIcon, { backgroundColor: `${colors.primary}15` }]}>
@@ -97,44 +119,50 @@ export const SettingsScreen: React.FC = () => {
               thumbColor={isDark ? colors.primary : colors.surfaceContainerHigh}
             />
           </View>
-        </View>
+          </View>
+        </Animated.View>
 
         {/* Konto */}
-        <Text style={[styles.sectionLabel, { color: colors.gray }]}>KONTO</Text>
+        <Animated.View entering={FadeInDown.delay(ENTER_STEP * 2).springify()}>
+          <Text style={[styles.sectionLabel, { color: colors.gray }]}>KONTO</Text>
 
-        <View
-          style={[
-            styles.section,
-            { backgroundColor: colors.surface, borderColor: colors.border },
-            isDark && styles.cardDark,
-          ]}
-        >
-          <TouchableOpacity
-            style={styles.row}
-            onPress={logout}
-            activeOpacity={0.7}
+          <View
+            style={[
+              styles.section,
+              { backgroundColor: colors.surface, borderColor: colors.border },
+              isDark && styles.cardDark,
+            ]}
           >
-            <View style={styles.rowLeft}>
-              <View
-                style={[
-                  styles.rowIcon,
-                  { backgroundColor: `${colors.statusRed}15` },
-                ]}
-              >
-                <Ionicons name="log-out-outline" size={20} color={colors.statusRed} />
+            <TouchableOpacity
+              style={styles.row}
+              onPress={handleLogout}
+              activeOpacity={0.7}
+            >
+              <View style={styles.rowLeft}>
+                <View
+                  style={[
+                    styles.rowIcon,
+                    { backgroundColor: `${colors.statusRed}15` },
+                  ]}
+                >
+                  <Ionicons name="log-out-outline" size={20} color={colors.statusRed} />
+                </View>
+                <Text style={[styles.rowLabel, { color: colors.statusRed }]}>
+                  Wyloguj się
+                </Text>
               </View>
-              <Text style={[styles.rowLabel, { color: colors.statusRed }]}>
-                Wyloguj się
-              </Text>
-            </View>
-            <Ionicons name="chevron-forward" size={18} color={colors.gray} />
-          </TouchableOpacity>
-        </View>
+              <Ionicons name="chevron-forward" size={18} color={colors.gray} />
+            </TouchableOpacity>
+          </View>
+        </Animated.View>
 
         {/* App info */}
-        <Text style={[styles.appVersion, { color: colors.gray }]}>
+        <Animated.Text
+          style={[styles.appVersion, { color: colors.gray }]}
+          entering={FadeInDown.delay(ENTER_STEP * 3).springify()}
+        >
           Inteligentna Spiżarnia v1.0.0
-        </Text>
+        </Animated.Text>
       </ScrollView>
     </SafeAreaView>
   );

@@ -58,13 +58,8 @@ export const BarcodeScannerScreen: React.FC = () => {
       const productData = await fetchProductByBarcode(result.data);
 
       if (productData) {
-        navigation.goBack();
-        setTimeout(() => {
-          navigation.navigate("MainTabs", {
-            screen: "AddTab",
-            params: { scannedProduct: productData },
-          } as any);
-        }, 100);
+        // Wracamy do otwartego ekranu dodawania i przekazujemy zeskanowany produkt.
+        navigation.navigate("AddProduct", { scannedProduct: productData });
       } else {
         Alert.alert(
           "Nie znaleziono produktu",

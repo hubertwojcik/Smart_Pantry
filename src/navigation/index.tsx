@@ -1,6 +1,9 @@
 import React from "react";
 import { View, StyleSheet } from "react-native";
-import { NavigationContainer } from "@react-navigation/native";
+import {
+  NavigationContainer,
+  createNavigationContainerRef,
+} from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Ionicons } from "@expo/vector-icons";
@@ -8,6 +11,7 @@ import { fontFamily, fontSize, shadows } from "../constants/theme";
 import { useTheme } from "../context/ThemeContext";
 import { useAuthStore } from "../store/authStore";
 import { useNotificationStore } from "../store/notificationStore";
+import { analytics } from "../services/analytics";
 
 import { PantryScreen } from "../screens/PantryScreen";
 import { AddProductScreen } from "../screens/AddProductScreen";
@@ -18,18 +22,20 @@ import { LoginScreen } from "../screens/LoginScreen";
 import { RegisterScreen } from "../screens/RegisterScreen";
 import { SettingsScreen } from "../screens/SettingsScreen";
 import type { AuthStackParamList } from "../screens/LoginScreen";
+import type { FoodFactsResult } from "../services/openFoodFacts";
 
 export type RootStackParamList = {
   MainTabs: undefined;
   ProductDetail: { productId: string };
   BarcodeScanner: undefined;
   Settings: undefined;
+  AddProduct: { scannedProduct?: FoodFactsResult } | undefined;
 };
 
 export type TabParamList = {
   PantryTab: undefined;
-  AddTab: undefined;
   AlertsTab: undefined;
+  SettingsTab: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -91,20 +97,6 @@ const TabNavigator = () => {
         }}
       />
       <Tab.Screen
-        name="AddTab"
-        component={AddProductScreen}
-        options={{
-          tabBarLabel: "DODAJ",
-          tabBarIcon: () => (
-            <View
-              style={[styles.addButton, { backgroundColor: colors.primary }]}
-            >
-              <Ionicons name="add" size={28} color={colors.white} />
-            </View>
-          ),
-        }}
-      />
-      <Tab.Screen
         name="AlertsTab"
         component={AlertsScreen}
         options={{
@@ -119,6 +111,16 @@ const TabNavigator = () => {
             minWidth: 18,
             height: 18,
           },
+        }}
+      />
+      <Tab.Screen
+        name="SettingsTab"
+        component={SettingsScreen}
+        options={{
+          tabBarLabel: "PROFIL",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="person-outline" size={size} color={color} />
+          ),
         }}
       />
     </Tab.Navigator>
@@ -153,15 +155,37 @@ const MainNavigator = () => {
         component={SettingsScreen}
         options={{ animation: "slide_from_right" }}
       />
+      <Stack.Screen
+        name="AddProduct"
+        component={AddProductScreen}
+        options={{
+          animation: "slide_from_bottom",
+          presentation: "modal",
+        }}
+      />
     </Stack.Navigator>
   );
+};
+
+export const navigationRef = createNavigationContainerRef();
+
+// Śledzenie odwiedzanych ekranów -> GA4 (screen_view) + Firestore (analiza zachowań).
+const trackCurrentScreen = () => {
+  const routeName = navigationRef.getCurrentRoute()?.name;
+  if (routeName) {
+    analytics.screenView(routeName);
+  }
 };
 
 export const Navigation = () => {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
 
   return (
-    <NavigationContainer>
+    <NavigationContainer
+      ref={navigationRef}
+      onReady={trackCurrentScreen}
+      onStateChange={trackCurrentScreen}
+    >
       {isAuthenticated ? <MainNavigator /> : <AuthNavigator />}
     </NavigationContainer>
   );

@@ -10,12 +10,14 @@ import {
   Platform,
   ScrollView,
   Alert,
+  ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useNavigation } from "@react-navigation/native";
 import { useTheme } from "../context/ThemeContext";
 import { useAuthStore } from "../store/authStore";
+import { analytics } from "../services/analytics";
 import {
   fontFamily,
   fontSize,
@@ -35,6 +37,7 @@ export const LoginScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
   const { colors, isDark } = useTheme();
   const login = useAuthStore((state) => state.login);
+  const isSubmitting = useAuthStore((state) => state.isSubmitting);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -42,14 +45,20 @@ export const LoginScreen: React.FC = () => {
   const [emailFocused, setEmailFocused] = useState(false);
   const [passwordFocused, setPasswordFocused] = useState(false);
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     if (!email.trim() || !password) {
       Alert.alert("Błąd", "Wpisz e-mail i hasło");
       return;
     }
-    const success = login(email.trim().toLowerCase(), password);
-    if (!success) {
-      Alert.alert("Błąd logowania", "Nieprawidłowy e-mail lub hasło");
+    analytics.track("tap_login");
+    const result = await login(email.trim().toLowerCase(), password);
+    if (result.success) {
+      analytics.track("login");
+    } else {
+      Alert.alert(
+        "Błąd logowania",
+        result.error ?? "Nieprawidłowy e-mail lub hasło",
+      );
     }
   };
 
@@ -193,13 +202,19 @@ export const LoginScreen: React.FC = () => {
                 style={[
                   styles.submitButton,
                   { backgroundColor: colors.primary },
+                  isSubmitting && styles.submitButtonDisabled,
                 ]}
                 onPress={handleLogin}
                 activeOpacity={0.85}
+                disabled={isSubmitting}
               >
-                <Text style={[styles.submitText, { color: colors.white }]}>
-                  Zaloguj się
-                </Text>
+                {isSubmitting ? (
+                  <ActivityIndicator color={colors.white} />
+                ) : (
+                  <Text style={[styles.submitText, { color: colors.white }]}>
+                    Zaloguj się
+                  </Text>
+                )}
               </TouchableOpacity>
             </Animated.View>
           </Animated.View>
@@ -309,6 +324,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     ...shadows.card,
+  },
+  submitButtonDisabled: {
+    opacity: 0.6,
   },
   submitText: {
     fontFamily: fontFamily.semiBold,

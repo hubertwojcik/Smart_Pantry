@@ -1,13 +1,6 @@
 import React, { useEffect, useCallback } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  FlatList,
-  TouchableOpacity,
-  SafeAreaView,
-} from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { View, Text, StyleSheet, FlatList, SafeAreaView } from "react-native";
+import Animated, { FadeInDown } from "react-native-reanimated";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { fontFamily, fontSize, spacing } from "../constants/theme";
@@ -23,6 +16,9 @@ import {
 import { RootStackParamList } from "../navigation";
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
+
+// Kaskada wejścia "z góry na dół" (jak na ekranie Zapasy).
+const ENTER_STEP = 60;
 
 const RECIPE_SUGGESTIONS = [
   {
@@ -84,10 +80,6 @@ export const AlertsScreen: React.FC = () => {
     [navigation]
   );
 
-  const renderSectionHeader = (title: string) => (
-    <Text style={[styles.sectionTitle, { color: colors.gray }]}>{title}</Text>
-  );
-
   const renderContent = () => {
     if (notifications.length === 0) {
       return (
@@ -100,6 +92,9 @@ export const AlertsScreen: React.FC = () => {
       );
     }
 
+    // Delay bazowy sekcji "Wcześniej" = po nagłówku, tytule i kartach z "Dziś".
+    const earlierBase = 1 + (today.length > 0 ? 1 + today.length : 0);
+
     return (
       <FlatList
         data={[]}
@@ -108,36 +103,51 @@ export const AlertsScreen: React.FC = () => {
           <>
             {today.length > 0 && (
               <>
-                {renderSectionHeader("DZIŚ")}
-                {today.map((notification) => (
-                  <NotificationCard
+                <Animated.Text
+                  style={[styles.sectionTitle, { color: colors.gray }]}
+                  entering={FadeInDown.delay(ENTER_STEP).springify()}
+                >
+                  DZIŚ
+                </Animated.Text>
+                {today.map((notification, index) => (
+                  <Animated.View
                     key={notification.id}
-                    notification={notification}
-                    onPress={() => handleNotificationPress(notification)}
-                  />
+                    entering={FadeInDown.delay(
+                      (2 + index) * ENTER_STEP,
+                    ).springify()}
+                  >
+                    <NotificationCard
+                      notification={notification}
+                      onPress={() => handleNotificationPress(notification)}
+                    />
+                  </Animated.View>
                 ))}
               </>
             )}
 
             {earlier.length > 0 && (
               <>
-                {renderSectionHeader("WCZEŚNIEJ")}
-                {earlier.map((notification) => (
-                  <NotificationCard
+                <Animated.Text
+                  style={[styles.sectionTitle, { color: colors.gray }]}
+                  entering={FadeInDown.delay(earlierBase * ENTER_STEP).springify()}
+                >
+                  WCZEŚNIEJ
+                </Animated.Text>
+                {earlier.map((notification, index) => (
+                  <Animated.View
                     key={notification.id}
-                    notification={notification}
-                    onPress={() => handleNotificationPress(notification)}
-                  />
+                    entering={FadeInDown.delay(
+                      (earlierBase + 1 + index) * ENTER_STEP,
+                    ).springify()}
+                  >
+                    <NotificationCard
+                      notification={notification}
+                      onPress={() => handleNotificationPress(notification)}
+                      dimmed
+                    />
+                  </Animated.View>
                 ))}
               </>
-            )}
-
-            {recipeSuggestion && (
-              <RecipeSuggestionCard
-                title={recipeSuggestion.title}
-                description={recipeSuggestion.description}
-                onPress={() => {}}
-              />
             )}
           </>
         }
@@ -149,25 +159,17 @@ export const AlertsScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <Ionicons
-            name="notifications"
-            size={24}
-            color={colors.primary}
-            style={styles.headerIcon}
-          />
-          <Text style={[styles.headerTitle, { color: colors.charcoal }]}>
-            Powiadomienia
-          </Text>
-        </View>
-        <TouchableOpacity
-          style={styles.settingsButton}
-          onPress={() => navigation.navigate("Settings")}
-        >
-          <Ionicons name="settings-outline" size={24} color={colors.charcoal} />
-        </TouchableOpacity>
-      </View>
+      <Animated.View
+        style={styles.header}
+        entering={FadeInDown.delay(0).springify()}
+      >
+        <Text style={[styles.headerTitle, { color: colors.primary }]}>
+          Powiadomienia
+        </Text>
+        <Text style={[styles.headerSubtitle, { color: colors.gray }]}>
+          Zarządzaj terminami ważności i zapasami
+        </Text>
+      </Animated.View>
 
       {renderContent()}
     </SafeAreaView>
@@ -179,25 +181,19 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
     paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.lg,
-  },
-  headerLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  headerIcon: {
-    marginRight: spacing.sm,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.lg,
   },
   headerTitle: {
     fontFamily: fontFamily.bold,
-    fontSize: fontSize.xl,
+    fontSize: fontSize.display,
+    letterSpacing: -0.5,
+    marginBottom: spacing.xs,
   },
-  settingsButton: {
-    padding: spacing.sm,
+  headerSubtitle: {
+    fontFamily: fontFamily.regular,
+    fontSize: fontSize.sm,
   },
   listContent: {
     paddingHorizontal: spacing.xl,

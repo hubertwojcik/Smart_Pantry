@@ -3,9 +3,12 @@
   "compilerOptions": {
     "strict": true,
     "baseUrl": ".",
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
     "paths": {
       "@/*": ["src/*"]
     }
   },
-  "include": ["**/*.ts", "**/*.tsx", "App.tsx"]
+  "include": ["App.tsx", "index.ts", "src/**/*.ts", "src/**/*.tsx"]
 }

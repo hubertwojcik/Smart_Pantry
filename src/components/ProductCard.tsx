@@ -31,32 +31,12 @@ const getCategoryIcon = (category: Category): keyof typeof Ionicons.glyphMap => 
   }
 };
 
-const getCategoryColor = (category: Category): string => {
-  switch (category) {
-    case "Nabiał":
-      return "#60A5FA";
-    case "Pieczywo":
-      return "#FBBF24";
-    case "Mięso":
-      return "#F87171";
-    case "Warzywa":
-      return "#34D399";
-    case "Suche":
-      return "#A78BFA";
-    case "Napoje":
-      return "#F472B6";
-    default:
-      return "#78716C";
-  }
-};
-
 export const ProductCard: React.FC<ProductCardProps> = memo(
   ({ product, onPress }) => {
     const { colors, isDark } = useTheme();
     const status = getExpiryStatus(product.expiryDate);
     const statusColor = getStatusColor(status);
     const categoryIcon = getCategoryIcon(product.category);
-    const categoryColor = getCategoryColor(product.category);
 
     const weightDisplay =
       product.weight > 0
@@ -79,18 +59,8 @@ export const ProductCard: React.FC<ProductCardProps> = memo(
                 resizeMode="cover"
               />
             ) : (
-              <View
-                style={[
-                  styles.iconPlaceholder,
-                  { backgroundColor: `${categoryColor}20` },
-                ]}
-              >
-                <Ionicons
-                  name={categoryIcon}
-                  size={24}
-                  color={categoryColor}
-                />
-              </View>
+              // Bez tła — sama ikona wybarwiona kolorem statusu (jak w makiecie).
+              <Ionicons name={categoryIcon} size={30} color={statusColor} />
             )}
           </View>
           <View style={styles.info}>
@@ -128,22 +98,19 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
-    padding: spacing.md,
+    padding: spacing.lg,
   },
   imageContainer: {
+    width: 48,
+    height: 48,
     marginRight: spacing.md,
+    justifyContent: "center",
+    alignItems: "center",
   },
   image: {
     width: 48,
     height: 48,
     borderRadius: radius.sm,
-  },
-  iconPlaceholder: {
-    width: 48,
-    height: 48,
-    borderRadius: radius.sm,
-    justifyContent: "center",
-    alignItems: "center",
   },
   info: {
     flex: 1,

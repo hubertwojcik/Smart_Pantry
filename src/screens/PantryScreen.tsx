@@ -6,7 +6,7 @@ import {
   FlatList,
   TouchableOpacity,
   RefreshControl,
-  Animated,
+  ActivityIndicator,
   SafeAreaView,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -19,6 +19,7 @@ import { Product, SortOption } from "../types";
 import { ProductCard, FilterChip, EmptyState } from "../components";
 import { RootStackParamList } from "../navigation";
 import { runExpiryCheckForeground } from "../services/notificationService";
+import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -28,19 +29,14 @@ export const PantryScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
   const { colors } = useTheme();
   const products = useProductStore((state) => state.products);
+  const isLoading = useProductStore((state) => state.isLoading);
   const getExpiringSoon = useProductStore((state) => state.getExpiringSoon);
 
   const [refreshing, setRefreshing] = useState(false);
   const [sortBy, setSortBy] = useState<SortOption>("expiryDate");
-  const fadeAnim = useRef(new Animated.Value(0)).current;
+  
 
-  useEffect(() => {
-    Animated.timing(fadeAnim, {
-      toValue: 1,
-      duration: 300,
-      useNativeDriver: true,
-    }).start();
-  }, []);
+
 
   const expiringSoon = getExpiringSoon();
 
@@ -98,33 +94,37 @@ export const PantryScreen: React.FC = () => {
     [],
   );
 
+  // Kaskada wejścia "z góry na dół": każdy element dostaje delay = pozycja * krok.
+  const ENTER_STEP = 60;
+  const ENTER_MAX = 8; // limit, by długie listy nie czekały zbyt długo
+
+  const shownExpiring = sortedExpiringSoon.slice(0, 3);
+  // Ile animowanych elementów jest w nagłówku — lista płynnie kontynuuje kaskadę.
+  const headerCount =
+    1 + // wiersz filtrów
+    (shownExpiring.length > 0 ? 1 + shownExpiring.length : 0) + // tytuł + karty
+    (remainingProducts.length > 0 ? 1 : 0); // tytuł "Pozostałe zapasy"
+  const listBaseDelay = headerCount * ENTER_STEP;
+
   const renderProductCard = useCallback(
-    ({ item }: { item: Product }) => (
+    ({ item, index }: { item: Product; index: number }) => (
       <Animated.View
-        style={{
-          opacity: fadeAnim,
-          transform: [
-            {
-              translateY: fadeAnim.interpolate({
-                inputRange: [0, 1],
-                outputRange: [20, 0],
-              }),
-            },
-          ],
-        }}
+        entering={FadeInDown.delay(
+          listBaseDelay + Math.min(index, ENTER_MAX) * ENTER_STEP,
+        ).springify()}
       >
-        <ProductCard
-          product={item}
-          onPress={() => handleProductPress(item.id)}
-        />
+        <ProductCard product={item} onPress={() => handleProductPress(item.id)} />
       </Animated.View>
     ),
-    [fadeAnim, handleProductPress],
+    [handleProductPress, listBaseDelay],
   );
 
   const renderHeader = () => (
     <View>
-      <View style={styles.filterContainer}>
+      <Animated.View
+        style={styles.filterContainer}
+        entering={FadeInDown.delay(0).springify()}
+      >
         <FilterChip
           label="Data ważności"
           active={sortBy === "expiryDate"}
@@ -140,11 +140,14 @@ export const PantryScreen: React.FC = () => {
           active={sortBy === "category"}
           onPress={() => setSortBy("category")}
         />
-      </View>
+      </Animated.View>
 
-      {sortedExpiringSoon.length > 0 && (
+      {shownExpiring.length > 0 && (
         <View style={styles.section}>
-          <View style={styles.sectionHeader}>
+          <Animated.View
+            style={styles.sectionHeader}
+            entering={FadeInDown.delay(ENTER_STEP).springify()}
+          >
             <Text style={[styles.sectionTitle, { color: colors.gray }]}>
               WYGASAJĄCE WKRÓTCE
             </Text>
@@ -153,21 +156,11 @@ export const PantryScreen: React.FC = () => {
                 ZOBACZ WSZYSTKO
               </Text>
             </TouchableOpacity>
-          </View>
-          {sortedExpiringSoon.slice(0, 3).map((product, index) => (
+          </Animated.View>
+          {shownExpiring.map((product, index) => (
             <Animated.View
               key={product.id}
-              style={{
-                opacity: fadeAnim,
-                transform: [
-                  {
-                    translateY: fadeAnim.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [20 * (index + 1), 0],
-                    }),
-                  },
-                ],
-              }}
+              entering={FadeInDown.delay((2 + index) * ENTER_STEP).springify()}
             >
               <ProductCard
                 product={product}
@@ -179,14 +172,38 @@ export const PantryScreen: React.FC = () => {
       )}
 
       {remainingProducts.length > 0 && (
-        <View style={styles.sectionHeader}>
+        <Animated.View
+          style={styles.sectionHeader}
+          entering={FadeInDown.delay(
+            (headerCount - 1) * ENTER_STEP,
+          ).springify()}
+        >
           <Text style={[styles.sectionTitle, { color: colors.gray }]}>
             {isGrouped ? "POZOSTAŁE ZAPASY" : "WSZYSTKIE PRODUKTY"}
           </Text>
-        </View>
+        </Animated.View>
       )}
     </View>
   );
+
+  // Produkty ładują się asynchronicznie z Firestore — pokaż loader zamiast
+  // migać pustym stanem, dopóki nie dotrze pierwsza odpowiedź.
+  if (isLoading && products.length === 0) {
+    return (
+      <SafeAreaView
+        style={[styles.container, { backgroundColor: colors.background }]}
+      >
+        <View style={styles.header}>
+          <Text style={[styles.title, { color: colors.charcoal }]}>
+            Inteligentna Spiżarnia
+          </Text>
+        </View>
+        <View style={styles.loaderContainer}>
+          <ActivityIndicator size="large" color={colors.primary} />
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   if (products.length === 0) {
     return (
@@ -197,25 +214,6 @@ export const PantryScreen: React.FC = () => {
           <Text style={[styles.title, { color: colors.charcoal }]}>
             Inteligentna Spiżarnia
           </Text>
-          <View style={styles.headerIcons}>
-            <TouchableOpacity style={styles.iconButton}>
-              <Ionicons
-                name="search-outline"
-                size={24}
-                color={colors.charcoal}
-              />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.iconButton}
-              onPress={() => navigation.navigate("Settings")}
-            >
-              <Ionicons
-                name="person-circle-outline"
-                size={24}
-                color={colors.charcoal}
-              />
-            </TouchableOpacity>
-          </View>
         </View>
         <EmptyState
           icon="basket-outline"
@@ -223,9 +221,7 @@ export const PantryScreen: React.FC = () => {
           title="Spiżarnia jest pusta"
           subtitle="Dodaj swoje pierwsze produkty, aby śledzić ich daty ważności"
           actionLabel="Dodaj pierwszy produkt"
-          onAction={() =>
-            navigation.navigate("MainTabs", { screen: "AddTab" } as any)
-          }
+          onAction={() => navigation.navigate("AddProduct")}
         />
       </SafeAreaView>
     );
@@ -239,21 +235,7 @@ export const PantryScreen: React.FC = () => {
         <Text style={[styles.title, { color: colors.charcoal }]}>
           Inteligentna Spiżarnia
         </Text>
-        <View style={styles.headerIcons}>
-          <TouchableOpacity style={styles.iconButton}>
-            <Ionicons name="search-outline" size={24} color={colors.charcoal} />
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.iconButton}
-            onPress={() => navigation.navigate("Settings")}
-          >
-            <Ionicons
-              name="person-circle-outline"
-              size={24}
-              color={colors.charcoal}
-            />
-          </TouchableOpacity>
-        </View>
+
       </View>
 
       <FlatList
@@ -275,9 +257,7 @@ export const PantryScreen: React.FC = () => {
 
       <TouchableOpacity
         style={[styles.fab, { backgroundColor: colors.primary }]}
-        onPress={() =>
-          navigation.navigate("MainTabs", { screen: "AddTab" } as any)
-        }
+        onPress={() => navigation.navigate("AddProduct")}
         activeOpacity={0.8}
       >
         <Ionicons name="add" size={28} color={colors.white} />
@@ -289,6 +269,11 @@ export const PantryScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  loaderContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
   },
   header: {
     flexDirection: "row",
@@ -309,9 +294,9 @@ const styles = StyleSheet.create({
     marginLeft: spacing.sm,
   },
   filterContainer: {
-    flexDirection: "row",
-    paddingHorizontal: spacing.xl,
+    flexDirection: "row",    
     paddingBottom: spacing.lg,
+    // justifyContent:'space-between'
   },
   section: {
     marginBottom: spacing.lg,
@@ -320,7 +305,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingHorizontal: spacing.xl,
     marginBottom: spacing.md,
   },
   sectionTitle: {
@@ -340,7 +324,7 @@ const styles = StyleSheet.create({
   fab: {
     position: "absolute",
     right: spacing.xl,
-    bottom: 100,
+    bottom: 40,
     width: 56,
     height: 56,
     borderRadius: 28,

@@ -1,8 +1,11 @@
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
-import { colors, radius, fontFamily, fontSize, spacing } from "../constants/theme";
-import { ExpiryStatus } from "../types";
-import { getStatusColor, getStatusLabel } from "../services/expiryService";
+import { radius, fontFamily, fontSize, spacing } from "../constants/theme";
+import {
+  getExpiryStatus,
+  getStatusColor,
+  getStatusLabel,
+} from "../services/expiryService";
 
 interface StatusBadgeProps {
   expiryDate: string;
@@ -14,23 +17,19 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
   size = "medium",
 }) => {
   const label = getStatusLabel(expiryDate);
-  const status = label === "PRZETERMINOWANE" || label === "DZIŚ" || label === "JUTRO"
-    ? "critical"
-    : label === "OK"
-    ? "ok"
-    : "warning";
-  const backgroundColor = getStatusColor(status as ExpiryStatus);
+  const color = getStatusColor(getExpiryStatus(expiryDate));
 
   return (
     <View
       style={[
         styles.badge,
-        { backgroundColor },
+        // Miękki "container": delikatnie wybarwione tło + nasycony tekst.
+        { backgroundColor: `${color}1F` },
         size === "small" && styles.badgeSmall,
       ]}
     >
       <Text
-        style={[styles.text, size === "small" && styles.textSmall]}
+        style={[styles.text, { color }, size === "small" && styles.textSmall]}
         numberOfLines={1}
       >
         {label}
@@ -47,12 +46,11 @@ const styles = StyleSheet.create({
     alignSelf: "flex-start",
   },
   badgeSmall: {
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 5,
   },
   text: {
-    color: colors.white,
-    fontFamily: fontFamily.semiBold,
+    fontFamily: fontFamily.bold,
     fontSize: fontSize.xs,
     textTransform: "uppercase",
     letterSpacing: 0.5,

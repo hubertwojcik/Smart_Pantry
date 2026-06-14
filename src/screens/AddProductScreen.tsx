@@ -12,7 +12,10 @@ import {
   SafeAreaView,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useNavigation } from "@react-navigation/native";
+// RN-owy `Animated` zostaje do istniejących animacji (formFadeAnim, pulseAnim);
+// reanimated dodajemy pod aliasem ReAnimated tylko do kaskady wejścia.
+import ReAnimated, { FadeInDown } from "react-native-reanimated";
+import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import {
@@ -34,16 +37,20 @@ import {
 } from "../components";
 import { RootStackParamList } from "../navigation";
 import { FoodFactsResult } from "../services/openFoodFacts";
-import { runExpiryCheckForeground } from "../services/notificationService";
 import { formatDate } from "../services/expiryService";
+import { analytics } from "../services/analytics";
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
+type AddProductRoute = RouteProp<RootStackParamList, "AddProduct">;
+
+// Kaskada wejścia "z góry na dół" (jak na ekranie Zapasy).
+const ENTER_STEP = 60;
 
 export const AddProductScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
+  const route = useRoute<AddProductRoute>();
   const { colors } = useTheme();
   const addProduct = useProductStore((state) => state.addProduct);
-  const products = useProductStore((state) => state.products);
 
   const [name, setName] = useState("");
   const [weight, setWeight] = useState("");
@@ -91,6 +98,7 @@ export const AddProductScreen: React.FC = () => {
   const isValid = name.trim() !== "" && expiryDate !== null;
 
   const handleScanPress = () => {
+    analytics.track("scan_barcode");
     navigation.navigate("BarcodeScanner");
   };
 
@@ -116,20 +124,13 @@ export const AddProductScreen: React.FC = () => {
       imageUrl: scannedData?.imageUrl || undefined,
     });
 
-    await runExpiryCheckForeground([
-      ...products,
-      {
-        id: "temp",
-        name: name.trim(),
-        weight: parseFloat(weight) || 0,
-        weightUnit,
-        category: category || "Inne",
-        expiryDate: expiryDate.toISOString(),
-        quantity,
-        addedAt: new Date().toISOString(),
-      },
-    ]);
+    analytics.track("add_product", {
+      category: category || "Inne",
+      from_scan: !!scannedData?.barcode,
+    });
 
+    // Alert dla nowego produktu wygeneruje się sam, gdy snapshot z Firestore
+    // zaktualizuje listę produktów (efekt w App.tsx) — z prawdziwym id, bez duplikatu.
     Alert.alert("Sukces", "Produkt został dodany do spiżarni", [
       {
         text: "OK",
@@ -163,6 +164,16 @@ export const AddProductScreen: React.FC = () => {
     setCategory(result.category);
     setShowSuccessBanner(true);
   }, []);
+
+  // Produkt zeskanowany w BarcodeScannerScreen wraca tu jako parametr trasy.
+  useEffect(() => {
+    const scanned = route.params?.scannedProduct;
+    if (scanned) {
+      handleBarcodeResult(scanned);
+      // Czyścimy parametr, żeby nie nadpisać formularza przy kolejnym renderze.
+      navigation.setParams({ scannedProduct: undefined });
+    }
+  }, [route.params?.scannedProduct, handleBarcodeResult, navigation]);
 
   return (
     <SafeAreaView
@@ -219,6 +230,7 @@ export const AddProductScreen: React.FC = () => {
             </View>
           )}
 
+          <ReAnimated.View entering={FadeInDown.delay(0).springify()}>
           <TouchableOpacity
             style={[
               styles.scanCard,
@@ -252,8 +264,12 @@ export const AddProductScreen: React.FC = () => {
             </View>
             <Ionicons name="chevron-forward" size={20} color={colors.gray} />
           </TouchableOpacity>
+          </ReAnimated.View>
 
-          <View style={styles.dividerContainer}>
+          <ReAnimated.View
+            style={styles.dividerContainer}
+            entering={FadeInDown.delay(ENTER_STEP).springify()}
+          >
             <View
               style={[styles.dividerLine, { backgroundColor: colors.border }]}
             />
@@ -263,8 +279,9 @@ export const AddProductScreen: React.FC = () => {
             <View
               style={[styles.dividerLine, { backgroundColor: colors.border }]}
             />
-          </View>
+          </ReAnimated.View>
 
+          <ReAnimated.View entering={FadeInDown.delay(ENTER_STEP * 2).springify()}>
           <Animated.View style={{ opacity: formFadeAnim }}>
             <FloatingInput
               label="Nazwa produktu"
@@ -333,6 +350,7 @@ export const AddProductScreen: React.FC = () => {
                 display="default"
                 onChange={handleDateChange}
                 minimumDate={new Date()}
+                style={styles.datePicker}
               />
             )}
 
@@ -351,6 +369,7 @@ export const AddProductScreen: React.FC = () => {
               <QuantityStepper value={quantity} onChange={setQuantity} />
             </View>
           </Animated.View>
+          </ReAnimated.View>
         </ScrollView>
 
         <View
@@ -482,6 +501,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
+    marginBottom: spacing.lg,
+  },
+  datePicker: {
+    alignSelf: "flex-start",
     marginBottom: spacing.lg,
   },
   datePickerHighlight: {

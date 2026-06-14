@@ -1,6 +1,10 @@
 import * as Notifications from "expo-notifications";
 import { Product, ExpiryStatus } from "../types";
-import { getDaysUntilExpiry, getExpiryStatus } from "./expiryService";
+import {
+  getDaysUntilExpiry,
+  getExpiryStatus,
+  EXPIRING_SOON_DAYS,
+} from "./expiryService";
 import { storage, STORAGE_KEYS } from "../storage";
 import { useNotificationStore } from "../store/notificationStore";
 
@@ -37,7 +41,7 @@ export const scheduleExpiryNotification = async (
       body = `Produkt "${product.name}" wygasa DZISIAJ! Zużyj jak najszybciej.`;
     } else if (daysLeft === 1) {
       body = `Produkt "${product.name}" wygasa JUTRO!`;
-    } else if (daysLeft <= 7) {
+    } else if (daysLeft < EXPIRING_SOON_DAYS) {
       body = `Produkt "${product.name}" kończy się termin ważności za ${daysLeft} dni.`;
     } else {
       return null;
@@ -60,23 +64,20 @@ export const scheduleExpiryNotification = async (
 };
 
 export const runExpiryCheckForeground = async (products: Product[]) => {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
   const sentRaw = storage.getString(STORAGE_KEYS.SENT_NOTIFICATIONS) ?? "[]";
   const sent: string[] = JSON.parse(sentRaw);
   const newSent = [...sent];
+
+  const store = useNotificationStore.getState();
 
   for (const product of products) {
     const daysLeft = getDaysUntilExpiry(product.expiryDate);
     const status = getExpiryStatus(product.expiryDate);
 
-    if (daysLeft <= 7 && daysLeft >= 0) {
+    if (daysLeft < EXPIRING_SOON_DAYS && daysLeft >= 0) {
+      // Deterministyczne id -> alert w aplikacji nigdy się nie zduplikuje
+      // (dedup ogarnia store/Firestore, niezależnie od liczby wywołań).
       const notifId = `expiry-${product.id}-${daysLeft}`;
-
-      if (sent.includes(notifId)) {
-        continue;
-      }
 
       let message = "";
       if (daysLeft === 0) {
@@ -87,7 +88,7 @@ export const runExpiryCheckForeground = async (products: Product[]) => {
         message = `Zostały ${daysLeft} dni do końca terminu. Zaplanuj posiłek.`;
       }
 
-      useNotificationStore.getState().addNotification({
+      store.addNotification(notifId, {
         productId: product.id,
         productName: product.name,
         message,
@@ -95,22 +96,22 @@ export const runExpiryCheckForeground = async (products: Product[]) => {
         type: "expiry",
       });
 
-      await scheduleExpiryNotification(product, daysLeft);
-      newSent.push(notifId);
+      // SENT (MMKV) służy już tylko do dławienia powtórnych pushy systemowych.
+      if (!sent.includes(notifId)) {
+        await scheduleExpiryNotification(product, daysLeft);
+        newSent.push(notifId);
+      }
     }
 
     if (daysLeft < 0) {
       const notifId = `expired-${product.id}`;
-      if (!sent.includes(notifId)) {
-        useNotificationStore.getState().addNotification({
-          productId: product.id,
-          productName: product.name,
-          message: `Produkt przeterminował się ${Math.abs(daysLeft)} dni temu.`,
-          status: "expired",
-          type: "expiry",
-        });
-        newSent.push(notifId);
-      }
+      store.addNotification(notifId, {
+        productId: product.id,
+        productName: product.name,
+        message: `Produkt przeterminował się ${Math.abs(daysLeft)} dni temu.`,
+        status: "expired",
+        type: "expiry",
+      });
     }
   }
 

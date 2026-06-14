@@ -42,7 +42,8 @@ export const FilterChip: React.FC<FilterChipProps> = ({
 
 const styles = StyleSheet.create({
   chip: {
-    paddingHorizontal: spacing.lg,
+    
+    paddingHorizontal: spacing.xl,
     paddingVertical: spacing.sm,
     borderRadius: radius.pill,
     borderWidth: 1,
@@ -51,5 +52,6 @@ const styles = StyleSheet.create({
   text: {
     fontFamily: fontFamily.medium,
     fontSize: fontSize.sm,
+    textAlign:'center'
   },
 });

@@ -15,7 +15,7 @@ export const MMKVStorage: StateStorage = {
     return value ?? null;
   },
   removeItem: (name: string) => {
-    storage.delete(name);
+    storage.remove(name);
   },
 };
 
@@ -24,3 +24,15 @@ export const STORAGE_KEYS = {
   NOTIFICATIONS: "pantry-notifications",
   SENT_NOTIFICATIONS: "sent-notifications",
 } as const;
+
+/**
+ * Usuwa osierocone dane ze starej (lokalnej, współdzielonej między kontami)
+ * wersji aplikacji. Produkty żyją teraz w Firestore (per-użytkownik), a alerty
+ * tylko w pamięci — te klucze MMKV nie są już używane.
+ * Wywoływane raz przy starcie aplikacji.
+ */
+export const clearLegacyStorage = () => {
+  storage.remove(STORAGE_KEYS.PRODUCTS);
+  storage.remove(STORAGE_KEYS.NOTIFICATIONS);
+  storage.remove("pantry-auth"); // stare, fałszywe logowanie sprzed Firebase
+};

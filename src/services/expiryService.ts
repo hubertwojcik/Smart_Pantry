@@ -11,6 +11,9 @@ export const getDaysUntilExpiry = (expiryDate: string): number => {
   return diffDays;
 };
 
+/** Produkt z terminem krótszym niż 2 tygodnie trafia do "Wygasające wkrótce". */
+export const EXPIRING_SOON_DAYS = 14;
+
 export const getExpiryStatus = (expiryDate: string): ExpiryStatus => {
   const daysLeft = getDaysUntilExpiry(expiryDate);
 
@@ -18,7 +21,7 @@ export const getExpiryStatus = (expiryDate: string): ExpiryStatus => {
     return "expired";
   } else if (daysLeft <= 1) {
     return "critical";
-  } else if (daysLeft <= 7) {
+  } else if (daysLeft < EXPIRING_SOON_DAYS) {
     return "warning";
   } else {
     return "ok";
@@ -49,7 +52,7 @@ export const getStatusLabel = (expiryDate: string): string => {
     return "DZIŚ";
   } else if (daysLeft === 1) {
     return "JUTRO";
-  } else if (daysLeft <= 7) {
+  } else if (daysLeft < EXPIRING_SOON_DAYS) {
     return `${daysLeft} DNI`;
   } else {
     return "OK";

@@ -10,12 +10,14 @@ import {
   Platform,
   ScrollView,
   Alert,
+  ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useNavigation } from "@react-navigation/native";
 import { useTheme } from "../context/ThemeContext";
 import { useAuthStore } from "../store/authStore";
+import { analytics } from "../services/analytics";
 import {
   fontFamily,
   fontSize,
@@ -32,6 +34,7 @@ export const RegisterScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
   const { colors, isDark } = useTheme();
   const register = useAuthStore((state) => state.register);
+  const isSubmitting = useAuthStore((state) => state.isSubmitting);
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -42,7 +45,7 @@ export const RegisterScreen: React.FC = () => {
   const [emailFocused, setEmailFocused] = useState(false);
   const [passwordFocused, setPasswordFocused] = useState(false);
 
-  const handleRegister = () => {
+  const handleRegister = async () => {
     if (!name.trim()) {
       Alert.alert("Błąd", "Wpisz imię i nazwisko");
       return;
@@ -59,7 +62,17 @@ export const RegisterScreen: React.FC = () => {
       Alert.alert("Błąd", "Zaakceptuj regulamin, aby kontynuować");
       return;
     }
-    register(name.trim(), email.trim().toLowerCase(), password);
+    analytics.track("tap_register");
+    const result = await register(
+      name.trim(),
+      email.trim().toLowerCase(),
+      password,
+    );
+    if (result.success) {
+      analytics.track("register");
+    } else {
+      Alert.alert("Błąd rejestracji", result.error ?? "Spróbuj ponownie.");
+    }
   };
 
   const inputBorderColor = (focused: boolean) =>
@@ -272,19 +285,27 @@ export const RegisterScreen: React.FC = () => {
                 style={[
                   styles.submitButton,
                   { backgroundColor: colors.primary },
+                  isSubmitting && styles.submitButtonDisabled,
                 ]}
                 onPress={handleRegister}
                 activeOpacity={0.85}
+                disabled={isSubmitting}
               >
-                <Text style={[styles.submitText, { color: colors.white }]}>
-                  Zarejestruj się
-                </Text>
-                <Ionicons
-                  name="arrow-forward"
-                  size={20}
-                  color={colors.white}
-                  style={{ marginLeft: spacing.sm }}
-                />
+                {isSubmitting ? (
+                  <ActivityIndicator color={colors.white} />
+                ) : (
+                  <>
+                    <Text style={[styles.submitText, { color: colors.white }]}>
+                      Zarejestruj się
+                    </Text>
+                    <Ionicons
+                      name="arrow-forward"
+                      size={20}
+                      color={colors.white}
+                      style={{ marginLeft: spacing.sm }}
+                    />
+                  </>
+                )}
               </TouchableOpacity>
             </Animated.View>
 
@@ -431,6 +452,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     ...shadows.card,
+  },
+  submitButtonDisabled: {
+    opacity: 0.6,
   },
   submitText: {
     fontFamily: fontFamily.semiBold,
