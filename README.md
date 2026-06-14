@@ -66,36 +66,60 @@ src/
 
 ## Getting Started
 
+> ⚠️ **Aplikacja NIE działa w Expo Go.** Używa natywnych modułów
+> (`expo-dev-client`, `react-native-mmkv`, `expo-camera`, `expo-notifications`),
+> więc trzeba zbudować i uruchomić **własnego dev clienta** przez
+> `npm run ios` / `npm run android`. To wymaga skonfigurowanego środowiska
+> React Native (Xcode / Android Studio).
+
 ### Prerequisites
 
-- Node.js 18+
-- Expo CLI
-- iOS Simulator or Android Emulator (or physical device with Expo Go)
+- **Node.js 18+**
+- **Środowisko React Native** (natywny build):
+  - **iOS** – macOS + Xcode + CocoaPods
+  - **Android** – Android Studio + Android SDK + skonfigurowany emulator/urządzenie
+  - Pełna instrukcja krok po kroku:
+    https://reactnative.dev/docs/set-up-your-environment
+    (na górze wybierz **Development OS** oraz **Target OS: Android/iOS**)
+- iOS Simulator lub Android Emulator (albo fizyczne urządzenie w trybie deweloperskim)
 
 ### Installation
 
+```bash
+# 1. Zainstaluj zależności
+npm install
 ```
-Setup env:
-https://reactnative.dev/docs/set-up-your-environment
-```
+
+
+### Running the app (dev client)
+
+Pierwsze uruchomienie kompiluje natywną aplikację (może chwilę potrwać):
 
 ```bash
-# Install dependencies
-npm install
+# iOS (wymaga macOS + Xcode)
+npm run ios
 
-# Start the development server
-npx expo start
+# Android (wymaga Android Studio + SDK)
+npm run android
 ```
 
-> ⚠️ Przed uruchomieniem uzupełnij konfigurację Firebase i Google Analytics w
-> `src/config/index.ts` (instrukcja krok po kroku poniżej w sekcji
-> [Logowanie i Analityka](#logowanie-i-analityka-firebase--google-analytics)).
+Powyższe komendy budują dev clienta, instalują go na symulatorze/urządzeniu
+i startują bundler Metro. Przy kolejnych uruchomieniach (bez zmian natywnych)
+wystarczy sam bundler:
 
-### Running on Device
+```bash
+# Start Metro; aplikację otwórz na urządzeniu/symulatorze (klawisz i / a)
+npx expo start --dev-client
+```
 
-1. Install Expo Go on your iOS or Android device
-2. Scan the QR code from the terminal
-3. Or press `i` for iOS simulator / `a` for Android emulator
+> 💡 Po zmianie `metro.config.js` lub konfiguracji uruchom z czyszczeniem cache:
+> `npx expo start -c`.
+
+Przydatne linki:
+
+- Konfiguracja środowiska RN: https://reactnative.dev/docs/set-up-your-environment
+- Expo Dev Client: https://docs.expo.dev/develop/development-builds/introduction/
+- Expo – uruchamianie na urządzeniu: https://docs.expo.dev/get-started/set-up-your-environment/
 
 ## Key Features Implementation
 
@@ -150,45 +174,6 @@ Sesja steruje nawigacją: `App.tsx` przy starcie odpala `authStore.initialize()`
 splash dopóki nie wiadomo czy jest sesja), a `src/navigation/index.tsx` pokazuje ekrany
 logowania albo aplikację w zależności od `isAuthenticated`.
 
-### Konfiguracja Firebase (logowanie + analiza zachowań)
-
-1. Wejdź na [Firebase Console](https://console.firebase.google.com) i utwórz projekt.
-2. **Project settings → Your apps → Web (`</>`)** → zarejestruj aplikację i skopiuj obiekt `firebaseConfig`.
-3. Wklej wartości do `firebaseConfig` w `src/config/index.ts`.
-4. **Authentication → Sign-in method → Email/Password → Enable.**
-5. **Firestore Database → Create database.** Na potrzeby projektu reguły mogą zezwalać zalogowanym na zapis do `analytics_events`, np.:
-
-   ```
-   rules_version = '2';
-   service cloud.firestore {
-     match /databases/{database}/documents {
-       match /analytics_events/{doc} {
-         allow create: if request.auth != null;
-         allow read: if false; // odczyt tylko z konsoli Firebase
-       }
-     }
-   }
-   ```
-
-### Konfiguracja Google Analytics (GA4)
-
-1. Wejdź na [Google Analytics](https://analytics.google.com) → **Admin → Create Property**.
-2. Dodaj **strumień danych typu Web** (Measurement Protocol działa ze strumieniem Web).
-3. Skopiuj **Measurement ID** (`G-XXXXXXXXXX`) do `ga4Config.measurementId`.
-4. W strumieniu: **Measurement Protocol API secrets → Create** → skopiuj `Secret value` do `ga4Config.apiSecret`.
-5. Zdarzenia zobaczysz w **Realtime** oraz **Admin → DebugView** (Events).
-
-### Co jest śledzone
-
-- `screen_view` — automatycznie przy każdej zmianie ekranu (listener w `NavigationContainer`).
-- `login`, `register`, `logout`, `tap_login`, `tap_register` — przepływ uwierzytelniania.
-- `add_product` (z `category`, `from_scan`), `scan_barcode` — kluczowe akcje w aplikacji.
-
-Każde zdarzenie trafia jednocześnie do **GA4** i do **Firestore**.
-
-### Screeny (do raportu)
-
-> Wstaw zrzuty ekranu po skonfigurowaniu usług i wygenerowaniu ruchu w aplikacji.
 
 **Aplikacja:**
 
@@ -205,16 +190,4 @@ Każde zdarzenie trafia jednocześnie do **GA4** i do **Firestore**.
 
 <!-- ![Firestore analytics_events](docs/screens/firestore-events.png) -->
 
-## Design
 
-The app follows a premium, editorial design aesthetic with:
-
-- Warm color palette (Fresh Orange #F97316 as primary)
-- Manrope font family
-- Generous whitespace and soft shadows
-- No harsh borders - uses tonal layering
-- Smooth animations throughout
-
-## License
-
-MIT
