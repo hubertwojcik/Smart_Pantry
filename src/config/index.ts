@@ -3,46 +3,39 @@
  *  KONFIGURACJA USŁUG ZEWNĘTRZNYCH  (Firebase + Google Analytics)
  * ====================================================================
  *
- * Uzupełnij poniższe wartości danymi ze swoich projektów.
- * Wartości te NIE są tajne (firebaseConfig to klucze publiczne klienta),
- * z wyjątkiem GA4 `apiSecret` — traktuj go jak hasło.
+ * Wartości czytane są ze zmiennych środowiskowych (`.env`, prefiks
+ * EXPO_PUBLIC_). Skopiuj `.env.example` do `.env` i uzupełnij:
  *
- * --- FIREBASE ---
- * 1. https://console.firebase.google.com  ->  utwórz projekt
- * 2. Project settings -> "Your apps" -> dodaj aplikację Web (</>)
- * 3. Skopiuj obiekt `firebaseConfig` i wklej poniżej.
- * 4. Authentication -> Sign-in method -> włącz "Email/Password".
- * 5. Firestore Database -> Create database (tryb produkcyjny lub testowy).
+ *     cp .env.example .env
  *
- * --- GOOGLE ANALYTICS (GA4) ---
- * 1. https://analytics.google.com -> Admin -> Create Property
- * 2. Dodaj strumień danych typu "Web" (działa też dla Measurement Protocol).
- * 3. measurementId = "G-XXXXXXXXXX" (Data Streams -> twój strumień).
- * 4. apiSecret: Data Streams -> twój strumień -> "Measurement Protocol API secrets"
- *    -> "Create" -> skopiuj wartość "Secret value".
+ * Plik `.env` jest w `.gitignore` i NIE trafia do repozytorium.
+ *
+ * Uwaga: firebaseConfig to publiczne klucze klienta (nie są tajne).
+ * Bezpieczeństwo danych zapewniają Firestore Security Rules, nie
+ * ukrywanie tych wartości.
  */
 
 export const firebaseConfig = {
-  apiKey: "***REMOVED***",
-  authDomain: "smart-pantry-21f6a.firebaseapp.com",
-  projectId: "smart-pantry-21f6a",
-  storageBucket: "smart-pantry-21f6a.firebasestorage.app",
-  messagingSenderId: "629096359017",
-  appId: "***REMOVED***",
+  apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY ?? "",
+  authDomain: process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN ?? "",
+  projectId: process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID ?? "",
+  storageBucket: process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET ?? "",
+  messagingSenderId: process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID ?? "",
+  appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID ?? "",
 };
 
 export const ga4Config = {
-  measurementId: "G-SNTKNVM6SY",
-  // GA4 → Admin → Data Streams → (Twój strumień) →
-  // "Measurement Protocol API secrets" → Create → wklej "Secret value".
-  apiSecret: "TODO_GA4_API_SECRET",
+  measurementId: process.env.EXPO_PUBLIC_GA4_MEASUREMENT_ID ?? "",
+  apiSecret: process.env.EXPO_PUBLIC_GA4_API_SECRET ?? "",
 };
 
 /** Nazwa kolekcji w Firestore, do której trafiają zdarzenia użytkownika. */
 export const BEHAVIOR_EVENTS_COLLECTION = "analytics_events";
 
-/** Czy konfiguracja została uzupełniona (proste zabezpieczenie przed wysyłką do "TODO_"). */
-export const isFirebaseConfigured = !firebaseConfig.apiKey.startsWith("TODO_");
-export const isGa4Configured =
-  !ga4Config.apiSecret.startsWith("TODO_") &&
-  ga4Config.measurementId !== "G-XXXXXXXXXX";
+/** Czy konfiguracja Firebase została uzupełniona. */
+export const isFirebaseConfigured = Boolean(firebaseConfig.apiKey);
+
+/** Czy konfiguracja GA4 została uzupełniona. */
+export const isGa4Configured = Boolean(
+  ga4Config.apiSecret && ga4Config.measurementId,
+);
