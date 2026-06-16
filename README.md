@@ -177,9 +177,9 @@ logowania albo aplikację w zależności od `isAuthenticated`.
 
 **Aplikacja:**
 
-<!-- ![Ekran logowania](docs/screens/login.png) -->
-<!-- ![Dashboard / Spiżarnia](docs/screens/pantry.png) -->
-<!-- ![Dodawanie produktu](docs/screens/add-product.png) -->
+![Logowanie](images/logowanie.png)
+![Logowanie](images/rejerstracja.png)
+![Logowanie](images/dodaj_produkt.png)
 
 **Google Analytics (GA4):**
 
