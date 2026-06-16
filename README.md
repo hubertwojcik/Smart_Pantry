@@ -183,11 +183,8 @@ logowania albo aplikację w zależności od `isAuthenticated`.
 
 **Google Analytics (GA4):**
 
-<!-- ![GA4 Realtime](docs/screens/ga4-realtime.png) -->
-<!-- ![GA4 Events / DebugView](docs/screens/ga4-events.png) -->
+![Logowanie](images/analytics.png)
 
 **Analiza zachowań (Firestore — odpowiednik Hotjar):**
 
-<!-- ![Firestore analytics_events](docs/screens/firestore-events.png) -->
-
-
+![Logowanie](images/analytics_events.png)
